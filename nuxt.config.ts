@@ -5,7 +5,11 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@nuxt/ui',
-    '@logto/nuxt'
+    '@logto/nuxt',
+    '@nuxt/image',
+    '@nuxt/scripts',
+    '@nuxtjs/seo',
+    '@nuxtjs/i18n'
   ],
 
   devtools: {
@@ -35,6 +39,32 @@ export default defineNuxtConfig({
     }
   },
 
+  i18n: {
+    baseUrl: process.env.BASE_URL || 'http://localhost:3000',
+    locales: [
+      { code: 'es', language: 'es-ES', file: 'es.json', flag: '🇪🇸', name: 'Español', shortName: 'ES' },
+      { code: 'en', language: 'en-US', file: 'en.json', flag: '🇬🇧', name: 'English', shortName: 'EN' }
+    ],
+    defaultLocale: 'en',
+    strategy: 'no_prefix',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_redirected',
+      redirectOn: 'root',
+      alwaysRedirect: false,
+      cookieCrossOrigin: process.env.NODE_ENV === 'production'
+    }
+  },
+  image: {
+    format: ['avif', 'webp'],
+    provider: 'ipx',
+    quality: 80,
+    densities: [1, 2],
+    ipx: {
+      maxAge: 60 * 60 * 24 * 365
+    }
+    // domains: ['example.com']
+  },
   logto: {
     scopes: [UserScope.Email, UserScope.Phone, UserScope.CustomData],
     fetchUserInfo: true
