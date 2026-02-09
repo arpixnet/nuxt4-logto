@@ -1,3 +1,30 @@
+<script setup>
+useHead({
+  meta: [
+    { name: 'viewport', content: 'width=device-width, initial-scale=1' }
+  ],
+  link: [
+    { rel: 'icon', href: '/favicon.ico' }
+  ],
+  htmlAttrs: {
+    lang: 'en'
+  }
+})
+
+const title = 'Nuxt Starter Template'
+const description = 'A production-ready starter template powered by Nuxt UI. Build beautiful, accessible, and performant applications in minutes, not hours.'
+
+useSeoMeta({
+  title,
+  description,
+  ogTitle: title,
+  ogDescription: description,
+  ogImage: 'https://ui.nuxt.com/assets/templates/nuxt/starter-light.png',
+  twitterImage: 'https://ui.nuxt.com/assets/templates/nuxt/starter-light.png',
+  twitterCard: 'summary_large_image'
+})
+</script>
+
 <template>
   <div>
     <UPageHero
@@ -5,13 +32,13 @@
       description="A production-ready starter template powered by Nuxt UI. Build beautiful, accessible, and performant applications in minutes, not hours."
       :links="[{
         label: 'Get started',
-        to: 'https://ui.nuxt.com/docs/getting-started/installation/nuxt',
+        to: 'https://github.com/arpixnet/nuxt4-logto/README.md',
         target: '_blank',
         trailingIcon: 'i-lucide-arrow-right',
         size: 'xl'
       }, {
         label: 'Use this template',
-        to: 'https://github.com/nuxt-ui-templates/starter',
+        to: 'https://github.com/arpixnet/nuxt4-logto',
         target: '_blank',
         icon: 'i-simple-icons-github',
         size: 'xl',
@@ -58,13 +85,13 @@
         variant="subtle"
         :links="[{
           label: 'Start building',
-          to: 'https://ui.nuxt.com/docs/getting-started/installation/nuxt',
+          to: 'https://github.com/arpixnet/nuxt4-logto/README.md',
           target: '_blank',
           trailingIcon: 'i-lucide-arrow-right',
           color: 'neutral'
         }, {
           label: 'View on GitHub',
-          to: 'https://github.com/nuxt-ui-templates/starter',
+          to: 'https://github.com/arpixnet/nuxt4-logto',
           target: '_blank',
           icon: 'i-simple-icons-github',
           color: 'neutral',
