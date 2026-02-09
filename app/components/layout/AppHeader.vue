@@ -7,6 +7,7 @@
     <template #right>
       <LayoutLanguageSelector />
       <UColorModeButton />
+      <LayoutAuthUser />
     </template>
   </UHeader>
 </template>
