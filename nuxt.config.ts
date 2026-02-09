@@ -9,7 +9,8 @@ export default defineNuxtConfig({
     '@nuxt/image',
     '@nuxt/scripts',
     '@nuxtjs/seo',
-    '@nuxtjs/i18n'
+    '@nuxtjs/i18n',
+    'nuxt-arpix-email-sender'
   ],
 
   devtools: {
@@ -29,6 +30,24 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2025-07-15',
+
+  arpixEmailSender: {
+    transport: 'smtp',
+    defaultFrom: process.env.EMAIL_FROM || '"Your App" <noreply@yourdomain.com>',
+    smtp: {
+      service: 'gmail',
+      auth: {
+        type: 'OAuth2',
+        user: process.env.EMAIL_USER || 'info@yourdomain.com',
+        clientId: process.env.GMAIL_CLIENT_ID || '',
+        clientSecret: process.env.GMAIL_CLIENT_SECRET || '',
+        refreshToken: process.env.GMAIL_REFRESH_TOKEN || ''
+      }
+    },
+    templates: {
+      dir: 'server/emails/templates'
+    }
+  },
 
   eslint: {
     config: {

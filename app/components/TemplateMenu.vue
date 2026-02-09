@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import LanguageSelector from './languageSelector.vue'
+</script>
+
 <template>
   <UDropdownMenu
     v-slot="{ open }"
@@ -34,6 +38,7 @@
     :ui="{ content: 'min-w-fit' }"
     size="xs"
   >
+    <LanguageSelector />
     <UButton
       label="Starter"
       variant="subtle"
