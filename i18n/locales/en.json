@@ -60,7 +60,8 @@
     "noToken": "No JWT token available",
     "copy": "Copy",
     "copied": "Copied!",
-    "sessionInfo": "JWT Token"
+    "sessionInfo": "JWT Token",
+    "userInfo": "User Info"
   },
   "validation": {
     "emailRequired": "Email is required",
