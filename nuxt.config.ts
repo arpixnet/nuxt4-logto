@@ -29,7 +29,7 @@ export default defineNuxtConfig({
     '/': { prerender: true }
   },
 
-  compatibilityDate: '2025-07-15',
+  compatibilityDate: '2025-01-15',
 
   arpixEmailSender: {
     transport: 'smtp',
