@@ -1,16 +1,38 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
-@theme static {
+@theme {
   --font-sans: 'Poppins', Impact, sans-serif;
 }
 
+/* Escala completa de Primary usando variables de Nuxt UI - Light Mode */
 :root {
-  --ui-primary: #490886;
+  --ui-color-primary-50: #F8F5FF;
+  --ui-color-primary-100: #EDE4FF;
+  --ui-color-primary-200: #DBC8FF;
+  --ui-color-primary-300: #C4A6FF;
+  --ui-color-primary-400: #A874FF;
+  --ui-color-primary-500: #490886;
+  --ui-color-primary-600: #6D1FCA;
+  --ui-color-primary-700: #560FA3;
+  --ui-color-primary-800: #430D7C;
+  --ui-color-primary-900: #310A56;
+  --ui-color-primary-950: #200639;
 }
 
+/* Escala completa de Primary - Dark Mode */
 .dark {
-  --ui-primary: #9333ea;
+  --ui-color-primary-50: #FBF7FF;
+  --ui-color-primary-100: #F3E8FF;
+  --ui-color-primary-200: #E9D5FF;
+  --ui-color-primary-300: #D8B4FE;
+  --ui-color-primary-400: #C084FC;
+  --ui-color-primary-500: #9333ea;
+  --ui-color-primary-600: #7E22CE;
+  --ui-color-primary-700: #6B21A8;
+  --ui-color-primary-800: #581C87;
+  --ui-color-primary-900: #4B1079;
+  --ui-color-primary-950: #2E1065;
 }
 
 /* Add cursor-pointer to all Nuxt UI buttons */
