@@ -30,8 +30,10 @@
 export default defineEventHandler(async (event) => {
   // Logto client is initialized by server/middleware/api-auth.ts
   const client = event.context.logtoClient as unknown as {
+    getIdToken: () => Promise<string | null>
     getContext: (params?: { getAccessToken?: boolean, fetchUserInfo?: boolean }) => Promise<{
       isAuthenticated: boolean
+      claims?: unknown
       accessToken?: string
       userInfo?: unknown
     }>
@@ -45,29 +47,39 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // Get Logto context which contains authentication status and access token
-    const context = await client.getContext({
-      getAccessToken: true,
-      fetchUserInfo: true
-    })
+    // Get the ID token directly from Logto client
+    const token = await client.getIdToken()
 
-    if (!context.isAuthenticated || !context.accessToken) {
+    console.log('[JWT] Token retrieved:', !!token, 'Prefix:', token?.substring(0, 20))
+
+    if (!token) {
       throw createError({
         statusCode: 401,
         statusMessage: 'User not authenticated'
       })
     }
 
+    // Get user info
+    const context = await client.getContext({
+      fetchUserInfo: true
+    })
+
+    console.log('[JWT] Context:', {
+      isAuthenticated: context.isAuthenticated,
+      hasUserInfo: !!context.userInfo
+    })
+
     // Decode JWT to get expiration time
-    const parts = context.accessToken.split('.')
+    const parts = token.split('.')
     if (parts.length !== 3) {
+      console.error('[JWT] Invalid token format - parts:', parts.length, 'Token:', token)
       throw new Error('Invalid token format')
     }
 
     const payload = JSON.parse(Buffer.from(parts[1]!, 'base64').toString('utf-8'))
 
     return {
-      token: context.accessToken,
+      token,
       user: context.userInfo,
       expiresAt: payload.exp
     }
