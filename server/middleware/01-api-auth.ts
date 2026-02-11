@@ -15,10 +15,9 @@
  */
 
 import { logtoEventHandler } from '#logto'
-import { authLogger, middlewareLogger } from '../utils/logger'
+import { authLogger, middlewareLogger, logError } from '../utils/logger'
 import { checkRateLimit, throwRateLimitError } from '../utils/rate-limiter'
 import type { H3Event } from 'h3'
-import type { Logger } from 'pino'
 
 export default defineEventHandler(async (event) => {
   // Skip if not an API route
@@ -98,27 +97,4 @@ async function applyRateLimiting(event: H3Event): Promise<void> {
       'Rate limiting check failed, allowing request'
     )
   }
-}
-
-/**
- * Helper to log errors with consistent format
- */
-function logError(
-  logger: Logger,
-  error: unknown,
-  message: string,
-  data?: Record<string, unknown>
-): void {
-  const errorData = {
-    ...data,
-    error: error instanceof Error
-      ? {
-          name: error.name,
-          message: error.message,
-          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        }
-      : error
-  }
-
-  logger.error(errorData, message)
 }

@@ -3,10 +3,28 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 
 const { session, isAuthenticated } = useAuthSession()
 const { t } = useI18n()
-
+const clientLogger = useClientLogger()
 const user = computed(() => session.value?.user)
+
+// Log user authentication status changes
+watchEffect(() => {
+  if (isAuthenticated.value && user.value) {
+    clientLogger.debug('auth-user', 'Authenticated user rendered', {
+      userId: user.value.sub,
+      username: user.value.username
+    })
+  } else if (!isAuthenticated.value) {
+    clientLogger.debug('auth-user', 'Not authenticated, showing login button')
+  }
+})
+
 const userInitial = computed(() => {
   if (!user.value?.username) {
+    if (isAuthenticated.value) {
+      clientLogger.warn('auth-user', 'User authenticated but username missing', {
+        userId: user.value?.sub
+      })
+    }
     return null
   }
   return user.value.username.charAt(0).toUpperCase()
@@ -36,7 +54,12 @@ const userMenuItems = computed<DropdownMenuItem[]>(() => [
     color: 'error' as const,
     disabled: !isAuthenticated.value,
     to: '/sign-out',
-    external: true
+    external: true,
+    onSelect: () => {
+      clientLogger.info('auth-user', 'Logout button clicked', {
+        userId: user.value?.sub
+      })
+    }
   }
 ])
 </script>
