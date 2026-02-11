@@ -18,6 +18,12 @@ export default defineNuxtConfig({
   },
 
   css: ['~/assets/css/main.css'],
+  site: {
+    url: process.env.BASE_URL || 'http://localhost:3000',
+    name: process.env.APP_NAME || 'Arpix App',
+    description: 'Production ready Nuxt 4 boilerplate with Logto authentication',
+    defaultLocale: 'en'
+  },
 
   runtimeConfig: {
     public: {
