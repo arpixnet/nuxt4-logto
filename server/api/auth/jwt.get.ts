@@ -1,11 +1,12 @@
 /**
  * Get JWT Token for Hasura
  *
- * This endpoint returns to ID token from Logto that can be used
- * to authenticate with Hasura GraphQL Engine.
+ * This endpoint returns an access token from Logto that can be used
+ * to authenticate with Hasura GraphQL Engine or other API endpoints.
  *
- * The JWT contains Hasura-specific claims that are configured in
- * Logto's JWT claims settings.
+ * The token contains standard JWT claims. For Hasura-specific claims,
+ * configure them in Logto's JWT claims settings and use the access token
+ * for the configured resource.
  *
  * Usage in frontend:
  * ```ts
@@ -26,18 +27,15 @@
  * ```
  */
 
-interface JWTClaims {
-  exp?: number
-  iat?: number
-  iss?: string
-  sub?: string
-  aud?: string | string[]
-  [key: string]: unknown
-}
-
 export default defineEventHandler(async (event) => {
   // Logto client is initialized by server/middleware/api-auth.ts
-  const client = event.context.logtoClient
+  const client = event.context.logtoClient as unknown as {
+    getContext: (params?: { getAccessToken?: boolean, fetchUserInfo?: boolean }) => Promise<{
+      isAuthenticated: boolean
+      accessToken?: string
+      userInfo?: unknown
+    }>
+  }
 
   if (!client) {
     throw createError({
@@ -46,31 +44,44 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Check if user is authenticated
-  const authenticated = await client.isAuthenticated()
-
-  if (!authenticated) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'User not authenticated'
-    })
-  }
-
   try {
-    // Get ID token which contains Hasura claims
-    const idToken = await client.getIdToken()
+    // Get Logto context which contains authentication status and access token
+    const context = await client.getContext({
+      getAccessToken: true,
+      fetchUserInfo: true
+    })
 
-    // You can also get user info if needed
-    const userInfo = await client.fetchUserInfo()
+    if (!context.isAuthenticated || !context.accessToken) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'User not authenticated'
+      })
+    }
+
+    // Decode JWT to get expiration time
+    const parts = context.accessToken.split('.')
+    if (parts.length !== 3) {
+      throw new Error('Invalid token format')
+    }
+
+    const payload = JSON.parse(Buffer.from(parts[1]!, 'base64').toString('utf-8'))
 
     return {
-      token: idToken,
-      user: userInfo,
-      // The ID token expires at this time (Unix timestamp)
-      expiresAt: await client.getAccessTokenClaims().then((claims: JWTClaims) => claims?.exp)
+      token: context.accessToken,
+      user: context.userInfo,
+      expiresAt: payload.exp
     }
   } catch (error) {
     console.error('Error getting JWT token:', error)
+
+    // Handle authentication errors specifically
+    if (error instanceof Error && error.message.includes('User is not authenticated')) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'User not authenticated'
+      })
+    }
+
     throw createError({
       statusCode: 500,
       statusMessage: 'Failed to get JWT token'
