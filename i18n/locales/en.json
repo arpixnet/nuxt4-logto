@@ -275,10 +275,13 @@
         "confirmPasswordDesc": "Please confirm your password to set up two-factor authentication.",
         "scanQrTitle": "Scan QR Code",
         "scanQrDesc": "Scan QR code with your authenticator app.",
+        "manualEntry": "Or enter this code manually:",
         "confirmPassword": "Current Password",
         "enterCode": "Enter 6-digit code from your app to verify.",
         "continue": "Continue",
-        "verifyAndActivate": "Verify & Activate"
+        "verifyAndActivate": "Verify & Activate",
+        "passwordRequired": "Password Required",
+        "passwordDesc": "To complete 2FA setup, please enter your current password to verify your identity."
       },
       "disableTwoFactor": {
         "title": "Disable Two-Factor Authentication",

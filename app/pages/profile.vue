@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { FormSubmitEvent } from '#ui/types'
+import VueQrcode from '@chenfengyuan/vue-qrcode'
 
 definePageMeta({
   middleware: 'auth',
@@ -9,7 +10,7 @@ definePageMeta({
 
 const { t } = useI18n()
 const { session } = useAuthSession()
-const { updateProfile, changePassword, setupTotp, verifyTotp, disableTotp, loading, error } = useUserProfile()
+const { updateProfile, changePassword, setupTotp, verifyTotp, disableTotp, getMfaStatus, loading, error } = useUserProfile()
 const toast = useToast()
 
 // Tabs
@@ -45,7 +46,7 @@ async function onProfileSubmit(event: FormSubmitEvent<any>) {
   try {
     await updateProfile({
       name: event.data.name,
-      username: event.data.username,
+      username: event.data.username
     })
     toast.add({ title: t('profile.toasts.profileUpdated'), color: 'success' })
   } catch (e) {
@@ -178,92 +179,159 @@ function tryLogtoKey(code: string): string | null {
   return translated !== key ? translated : null
 }
 
-// 2FA
-const is2FAEnabled = computed(() => {
-  // Check session for mfa_verification_factors or similar claims
-  // Or we need to fetch it. For now, we assume if mfa enabled user has 'mfa' claim or similar.
-  // Logto userinfo might have `mfa_verification_factors`.
-  // Casting to any to check properties not in standard type
-  const user = session.value?.user as any
-  return user?.mfa_verification_factors?.length > 0
+// 2FA - Fetch status from server (queries Logto directly)
+const mfaStatus = ref<{ enabled: boolean; factors: string[] }>({ enabled: false, factors: [] })
+
+// Fetch MFA status on mount
+onMounted(async () => {
+  mfaStatus.value = await getMfaStatus()
 })
 
+const is2FAEnabled = computed(() => mfaStatus.value.enabled)
+
 const is2FAModalOpen = ref(false)
-const totpStep = ref<'start' | 'scan' | 'verify'>('start')
-const totpData = ref<{ secret: string, qrCodeUri: string } | null>(null)
+const totpStep = ref<'start' | 'scan' | 'verify' | 'password'>('start')
+const totpData = ref<{ secret: string, qrCodeUri: string, verificationId?: string } | null>(null)
 const totpCode = ref('')
+const totpPassword = ref('')
 
 async function start2FAFlow() {
   totpStep.value = 'start'
+  totpPassword.value = ''
   is2FAModalOpen.value = true
   // Retrieve secret
   try {
-     const res = await setupTotp()
-     totpData.value = res
-     totpStep.value = 'scan'
-  } catch (e) {
-     toast.add({ title: 'Failed to start 2FA setup', color: 'error' })
-     is2FAModalOpen.value = false
+    const res = await setupTotp()
+    totpData.value = res
+    totpStep.value = 'scan'
+  } catch {
+    toast.add({ title: 'Failed to start 2FA setup', color: 'error' })
+    is2FAModalOpen.value = false
   }
 }
 
 async function verify2FASetup() {
   try {
-    await verifyTotp(totpCode.value)
+    if (!totpData.value?.secret) throw new Error('No TOTP secret')
+
+    // If no verificationId, we need password to get one
+    if (!totpData.value.verificationId && !totpPassword.value) {
+      totpStep.value = 'password'
+      return
+    }
+
+    await verifyTotp(totpCode.value, totpData.value.secret, totpData.value.verificationId, totpPassword.value || undefined)
     toast.add({ title: t('profile.toasts.twoFactorEnabled'), color: 'success' })
     is2FAModalOpen.value = false
     totpCode.value = ''
-  } catch (e) {
-    toast.add({ title: t('profile.errors.verificationFailed'), color: 'error' })
+    totpPassword.value = ''
+
+    // Refresh the page to update the session and show 2FA as enabled
+    // The session needs to be refreshed from the server to get updated MFA claims
+    await nextTick()
+    window.location.reload()
+  } catch (e: unknown) {
+    const errorObj = e as { data?: { data?: { code?: string } } }
+    const errorData = errorObj?.data?.data
+    if (errorData?.code === 'verification_required') {
+      // Server needs password verification
+      totpStep.value = 'password'
+    } else {
+      toast.add({ title: t('profile.errors.verificationFailed'), color: 'error' })
+    }
   }
 }
 
 async function disable2FA() {
-    if (!confirm(t('profile.modals.disableTwoFactor.description'))) return
-    try {
-        await disableTotp()
-        toast.add({ title: t('profile.toasts.twoFactorDisabled'), color: 'success' })
-    } catch (e) {
-         toast.add({ title: t('profile.errors.disable2FA'), color: 'error' })
-    }
+  if (!confirm(t('profile.modals.disableTwoFactor.description'))) return
+  try {
+    await disableTotp()
+    toast.add({ title: t('profile.toasts.twoFactorDisabled'), color: 'success' })
+  } catch {
+    toast.add({ title: t('profile.errors.disable2FA'), color: 'error' })
+  }
 }
-
 </script>
 
 <template>
   <UContainer class="py-8">
     <div class="mb-6">
-      <h1 class="text-3xl font-bold">{{ t('profile.title') }}</h1>
-      <p class="text-gray-500">{{ t('profile.subtitle') }}</p>
+      <h1 class="text-3xl font-bold">
+        {{ t('profile.title') }}
+      </h1>
+      <p class="text-gray-500">
+        {{ t('profile.subtitle') }}
+      </p>
     </div>
 
     <UTabs :items="items" class="w-full">
-      <template #profile="{ item }">
+      <template #profile>
         <UCard class="mt-4">
           <template #header>
-            <h3 class="text-lg font-semibold">{{ t('profile.profileInfo') }}</h3>
+            <h3 class="text-lg font-semibold">
+              {{ t('profile.profileInfo') }}
+            </h3>
           </template>
 
-          <UForm :schema="schemaProfile" :state="profileFormState" class="space-y-4" @submit="onProfileSubmit">
-            <UFormField :label="t('profile.email')" name="email">
-              <UInput v-model="profileFormState.email" disabled icon="i-heroicons-envelope" class="w-full" />
-              <p class="text-xs text-gray-500 mt-1">{{ t('profile.emailNotChangeable') }}</p>
+          <UForm
+            :schema="schemaProfile"
+            :state="profileFormState"
+            class="space-y-4"
+            @submit="onProfileSubmit"
+          >
+            <UFormField
+              :label="t('profile.email')"
+              name="email"
+            >
+              <UInput
+                v-model="profileFormState.email"
+                disabled
+                icon="i-heroicons-envelope"
+                class="w-full"
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                {{ t('profile.emailNotChangeable') }}
+              </p>
             </UFormField>
 
-            <UFormField :label="t('profile.username')" name="username">
-              <UInput v-model="profileFormState.username" icon="i-heroicons-user" class="w-full" />
+            <UFormField
+              :label="t('profile.username')"
+              name="username"
+            >
+              <UInput
+                v-model="profileFormState.username"
+                icon="i-heroicons-user"
+                class="w-full"
+              />
             </UFormField>
 
-            <UFormField :label="t('common.user')" name="name">
-              <UInput v-model="profileFormState.name" icon="i-heroicons-identification" class="w-full" />
+            <UFormField
+              :label="t('common.user')"
+              name="name"
+            >
+              <UInput
+                v-model="profileFormState.name"
+                icon="i-heroicons-identification"
+                class="w-full"
+              />
             </UFormField>
-             
-            <UFormField label="Phone" name="phone">
-               <UInput v-model="profileFormState.phone" icon="i-heroicons-phone" class="w-full" />
+
+            <UFormField
+              label="Phone"
+              name="phone"
+            >
+              <UInput
+                v-model="profileFormState.phone"
+                icon="i-heroicons-phone"
+                class="w-full"
+              />
             </UFormField>
 
             <div class="flex justify-end">
-              <UButton type="submit" :loading="loading">
+              <UButton
+                type="submit"
+                :loading="loading"
+              >
                 {{ t('profile.saveChanges') }}
               </UButton>
             </div>
@@ -271,17 +339,29 @@ async function disable2FA() {
         </UCard>
       </template>
 
-      <template #security="{ item }">
+      <template #security>
         <div class="space-y-6 mt-4">
           <!-- Password Section -->
           <UCard>
             <template #header>
-              <h3 class="text-lg font-semibold">{{ t('profile.changePassword') }}</h3>
-              <p class="text-sm text-gray-500">{{ t('profile.passwordDescription') }}</p>
+              <h3 class="text-lg font-semibold">
+                {{ t('profile.changePassword') }}
+              </h3>
+              <p class="text-sm text-gray-500">
+                {{ t('profile.passwordDescription') }}
+              </p>
             </template>
-            
-            <UForm :schema="schemaPassword" :state="passwordState" class="space-y-4" @submit="onPasswordSubmit">
-              <UFormField :label="t('profile.currentPassword')" name="currentPassword">
+
+            <UForm
+              :schema="schemaPassword"
+              :state="passwordState"
+              class="space-y-4"
+              @submit="onPasswordSubmit"
+            >
+              <UFormField
+                :label="t('profile.currentPassword')"
+                name="currentPassword"
+              >
                 <UInput
                   v-model="passwordState.currentPassword"
                   :type="showCurrentPassword ? 'text' : 'password'"
@@ -303,7 +383,10 @@ async function disable2FA() {
                 </UInput>
               </UFormField>
 
-              <UFormField :label="t('profile.newPassword')" name="password">
+              <UFormField
+                :label="t('profile.newPassword')"
+                name="password"
+              >
                 <div class="space-y-2 w-full">
                   <UInput
                     v-model="passwordState.password"
@@ -336,15 +419,21 @@ async function disable2FA() {
                     size="sm"
                   />
 
-                  <p id="password-strength" class="text-sm font-medium">
+                  <p
+                    id="password-strength"
+                    class="text-sm font-medium"
+                  >
                     {{ strengthText }}. {{ t('profile.passwordStrength.mustContain') }}
                   </p>
-                  <ul class="space-y-1" aria-label="Password requirements">
+                  <ul
+                    class="space-y-1"
+                    aria-label="Password requirements"
+                  >
                     <li
                       v-for="(req, index) in strength"
                       :key="index"
                       class="flex items-center gap-1"
-                      :class="req.met ? 'text-[var(--ui-success)]' : 'text-[var(--ui-text-muted)]'"
+                      :class="req.met ? 'text-success' : 'text-muted'"
                     >
                       <UIcon
                         :name="req.met ? 'i-lucide-circle-check' : 'i-lucide-circle-x'"
@@ -360,11 +449,13 @@ async function disable2FA() {
                   </ul>
                 </div>
               </UFormField>
-              
-
 
               <div class="flex justify-end">
-                <UButton type="submit" :loading="loading" color="neutral">
+                <UButton
+                  type="submit"
+                  :loading="loading"
+                  color="neutral"
+                >
                   {{ t('profile.updatePassword') }}
                 </UButton>
               </div>
@@ -373,66 +464,155 @@ async function disable2FA() {
 
           <!-- 2FA Section -->
           <UCard>
-             <template #header>
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h3 class="text-lg font-semibold">{{ t('profile.twoFactorAuth') }}</h3>
-                        <p class="text-sm text-gray-500">{{ t('profile.twoFactorDescription') }}</p>
-                    </div>
-                     <UBadge :color="is2FAEnabled ? 'success' : 'neutral'" variant="subtle">
-                        {{ is2FAEnabled ? t('profile.enabled') : t('profile.notVerified') }}
-                     </UBadge>
+            <template #header>
+              <div class="flex justify-between items-center">
+                <div>
+                  <h3 class="text-lg font-semibold">
+                    {{ t('profile.twoFactorAuth') }}
+                  </h3>
+                  <p class="text-sm text-gray-500">
+                    {{ t('profile.twoFactorDescription') }}
+                  </p>
                 </div>
-             </template>
-             
-             <div class="flex justify-between items-center">
-                 <div class="text-sm">
-                     <p v-if="is2FAEnabled">
-                         Your account is secured with 2FA.
-                     </p>
-                     <p v-else>
-                         Protect your account by enabling Two-Factor Authentication.
-                     </p>
-                 </div>
-                 <UButton v-if="!is2FAEnabled" @click="start2FAFlow" icon="i-heroicons-shield-check">
-                     {{ t('profile.enable') }}
-                 </UButton>
-                 <UButton v-else color="error" variant="ghost" @click="disable2FA" icon="i-heroicons-trash">
-                     {{ t('profile.disable') }}
-                 </UButton>
-             </div>
+                <UBadge
+                  :color="is2FAEnabled ? 'success' : 'neutral'"
+                  variant="subtle"
+                >
+                  {{ is2FAEnabled ? t('profile.enabled') : t('profile.notVerified') }}
+                </UBadge>
+              </div>
+            </template>
+
+            <div class="flex justify-between items-center">
+              <div class="text-sm">
+                <p v-if="is2FAEnabled">
+                  Your account is secured with 2FA.
+                </p>
+                <p v-else>
+                  Protect your account by enabling Two-Factor Authentication.
+                </p>
+              </div>
+              <UButton
+                v-if="!is2FAEnabled"
+                icon="i-heroicons-shield-check"
+                @click="start2FAFlow"
+              >
+                {{ t('profile.enable') }}
+              </UButton>
+              <UButton
+                v-else
+                color="error"
+                variant="ghost"
+                icon="i-heroicons-trash"
+                @click="disable2FA"
+              >
+                {{ t('profile.disable') }}
+              </UButton>
+            </div>
           </UCard>
         </div>
       </template>
     </UTabs>
 
     <!-- 2FA Modal -->
-    <UModal v-model="is2FAModalOpen">
+    <!-- 2FA Modal -->
+    <UModal
+      v-model:open="is2FAModalOpen"
+      :title="totpStep === 'password' ? t('profile.modals.twoFactor.passwordRequired') : t('profile.modals.twoFactor.scanQrTitle')"
+    >
+      <template #content>
         <div class="p-6">
-            <h3 class="text-xl font-bold mb-4">{{ t('profile.modals.twoFactor.scanQrTitle') }}</h3>
-            
-            <div v-if="totpStep === 'scan'" class="text-center space-y-4">
-                <p>{{ t('profile.modals.twoFactor.scanQrDesc') }}</p>
-                <div v-if="totpData?.qrCodeUri" class="flex justify-center p-4 bg-white rounded">
-                     <!-- We need a QR code component or image. For now, assume qrCodeUri is a data URI or we display secret -->
-                     <img v-if="totpData.qrCodeUri.startsWith('data:')" :src="totpData.qrCodeUri" alt="QR Code" class="max-w-[200px]" />
-                     <div v-else class="text-xs break-all border p-2 rounded">
-                        QR URI: {{ totpData.qrCodeUri }}
-                     </div>
-                </div>
-                <div class="text-sm text-gray-500">
-                    Secret: <span class="font-mono">{{ totpData?.secret }}</span>
-                </div>
-                
-                <UFormField :label="t('profile.modals.twoFactor.enterCode')">
-                    <UInput v-model="totpCode" placeholder="000000" class="text-center text-xl tracking-widest w-full" />
-                </UFormField>
-                
-                <UButton block @click="verify2FASetup" :disabled="totpCode.length < 6" :loading="loading">
-                    {{ t('profile.modals.twoFactor.verifyAndActivate') }}
-                </UButton>
+          <!-- Password Step - Required when verificationId is missing -->
+          <div
+            v-if="totpStep === 'password'"
+            class="text-center space-y-4"
+          >
+            <p class="text-sm text-gray-600">
+              {{ t('profile.modals.twoFactor.passwordDesc') }}
+            </p>
+            <UFormField :label="t('profile.currentPassword')">
+              <UInput
+                v-model="totpPassword"
+                type="password"
+                placeholder="••••••••"
+                class="w-full"
+              />
+            </UFormField>
+            <div class="flex gap-2">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                block
+                @click="totpStep = 'scan'"
+              >
+                {{ t('common.back') }}
+              </UButton>
+              <UButton
+                block
+                :disabled="!totpPassword"
+                :loading="loading"
+                @click="verify2FASetup"
+              >
+                {{ t('profile.modals.twoFactor.verifyAndActivate') }}
+              </UButton>
             </div>
+          </div>
+
+          <!-- Scan QR Step -->
+          <div
+            v-else-if="totpStep === 'scan'"
+            class="text-center space-y-4"
+          >
+            <p>{{ t('profile.modals.twoFactor.scanQrDesc') }}</p>
+            <!-- QR Code display - Only show what Logto provides -->
+            <div
+              v-if="totpData?.qrCodeUri"
+              class="flex flex-col items-center gap-4"
+            >
+              <div class="p-4 bg-white rounded">
+                <!-- If qrCodeUri is a data URI, render it directly as image -->
+                <img
+                  v-if="totpData.qrCodeUri.startsWith('data:')"
+                  :src="totpData.qrCodeUri"
+                  alt="QR Code"
+                  class="max-w-50"
+                >
+                <!-- Otherwise, generate QR code from the otpauth:// URI -->
+                <VueQrcode
+                  v-else
+                  :value="totpData.qrCodeUri"
+                  :options="{ width: 200 }"
+                  tag="canvas"
+                />
+              </div>
+            </div>
+            <!-- Show secret for manual entry -->
+            <div
+              v-if="totpData?.secret"
+              class="text-xs text-gray-500 text-center"
+            >
+              {{ t('profile.modals.twoFactor.manualEntry') }} <span class="font-mono bg-gray-100 px-1 rounded">{{ totpData.secret }}</span>
+            </div>
+
+            <UFormField :label="t('profile.modals.twoFactor.enterCode')">
+              <UInput
+                v-model="totpCode"
+                placeholder="000000"
+                class="text-center text-xl tracking-widest w-full"
+              />
+            </UFormField>
+
+            <UButton
+              block
+              :disabled="totpCode.length < 6"
+              :loading="loading"
+              @click="verify2FASetup"
+            >
+              {{ t('profile.modals.twoFactor.verifyAndActivate') }}
+            </UButton>
+          </div>
         </div>
+      </template>
     </UModal>
   </UContainer>
 </template>

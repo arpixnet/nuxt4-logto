@@ -13,7 +13,7 @@ export const useUserProfile = () => {
     error.value = null
     try {
       // Placeholder for fetching extended profile if needed
-      // await fetchUser() 
+      // await fetchUser()
     } catch (e: any) {
       error.value = e.message
       console.error(e)
@@ -72,17 +72,19 @@ export const useUserProfile = () => {
     }
   }
 
-  const verifyTotp = async (code: string, secret?: string) => {
+  const verifyTotp = async (code: string, secret: string, verificationId?: string, password?: string) => {
     loading.value = true
     error.value = null
     try {
-      await $fetch('/api/profile/mfa/totp/verify', {
+      const result = await $fetch('/api/profile/mfa/totp/verify', {
         method: 'POST',
-        body: { code, secret }
+        body: { code, secret, verificationId, password }
       })
-      // await fetchUser()
-    } catch (e: any) {
-      error.value = e.message
+      // Return the result so the caller can check if it was successful
+      return result
+    } catch (e: unknown) {
+      const err = e as Error
+      error.value = err.message
       throw e
     } finally {
       loading.value = false
@@ -98,11 +100,25 @@ export const useUserProfile = () => {
         method: 'DELETE'
       })
       // await fetchUser()
-    } catch (e: any) {
-      error.value = e.message
+    } catch (e: unknown) {
+      const err = e as Error
+      error.value = err.message
       throw e
     } finally {
       loading.value = false
+    }
+  }
+
+  const getMfaStatus = async () => {
+    try {
+      const result = await $fetch<{ enabled: boolean; factors: string[] }>('/api/profile/mfa/status', {
+        method: 'GET'
+      })
+      return result
+    } catch (e: unknown) {
+      const err = e as Error
+      console.error('Failed to get MFA status:', err.message)
+      return { enabled: false, factors: [] }
     }
   }
 
@@ -114,7 +130,8 @@ export const useUserProfile = () => {
     changePassword,
     setupTotp,
     verifyTotp,
-    disableTotp
+    disableTotp,
+    getMfaStatus
   }
 }
 

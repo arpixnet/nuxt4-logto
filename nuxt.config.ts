@@ -91,7 +91,14 @@ export default defineNuxtConfig({
     // domains: ['example.com']
   },
   logto: {
-    scopes: [UserScope.Email, UserScope.Phone, UserScope.CustomData],
+    scopes: [
+      UserScope.Email,
+      UserScope.Phone,
+      UserScope.CustomData,
+      UserScope.Identities,
+      UserScope.Profile,
+      UserScope.Address
+    ],
     fetchUserInfo: true
   }
 })

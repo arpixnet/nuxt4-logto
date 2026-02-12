@@ -275,10 +275,13 @@
         "confirmPasswordDesc": "Por favor confirma tu contraseña para configurar la autenticación de dos factores.",
         "scanQrTitle": "Escanear Código QR",
         "scanQrDesc": "Escanear el código QR con tu aplicación autenticadora.",
+        "manualEntry": "O ingresa este código manualmente:",
         "confirmPassword": "Contraseña Actual",
         "enterCode": "Ingresa el código de 6 dígitos de tu aplicación para verificar.",
         "continue": "Continuar",
-        "verifyAndActivate": "Verificar y Activar"
+        "verifyAndActivate": "Verificar y Activar",
+        "passwordRequired": "Contraseña Requerida",
+        "passwordDesc": "Para completar la configuración 2FA, por favor ingresa tu contraseña actual para verificar tu identidad."
       },
       "disableTwoFactor": {
         "title": "Desactivar Autenticación de Dos Factores",
