@@ -67,7 +67,9 @@
     "emailRequired": "Email is required",
     "emailInvalid": "Please enter a valid email address",
     "passwordRequired": "Password is required",
-    "passwordMinLength": "Password must be at least 8 characters"
+    "passwordMinLength": "Password must be at least 8 characters",
+    "nameRequired": "Name is required",
+    "currentPasswordRequired": "Current password is required"
   },
   "auth": {
     "login": {
@@ -240,6 +242,19 @@
     "newPassword": "New Password",
     "confirmPassword": "Confirm New Password",
     "updatePassword": "Update Password",
+    "passwordStrength": {
+      "enter": "Enter a password",
+      "weak": "Weak password",
+      "medium": "Medium password",
+      "strong": "Strong password",
+      "mustContain": "Must contain:",
+      "minLength": "At least 8 characters",
+      "lowercase": "At least 1 lowercase letter",
+      "uppercase": "At least 1 uppercase letter",
+      "number": "At least 1 number",
+      "met": "Requirement met",
+      "notMet": "Requirement not met"
+    },
     "security": "Security",
     "twoFactorAuth": "Two-Factor Authentication",
     "twoFactorDescription": "Add an extra layer of security to your account",
@@ -320,13 +335,30 @@
       "updateProfile": "Failed to update profile",
       "changePassword": "Failed to change password",
       "incorrectPassword": "Incorrect password",
+      "incorrectCurrentPassword": "The current password you entered is incorrect.",
       "invalidCode": "Invalid code",
       "verificationFailed": "Verification failed",
       "disable2FA": "Failed to disable 2FA",
       "loadSessions": "Failed to load sessions",
       "revokeSession": "Failed to revoke session",
       "revokeAllSessions": "Failed to revoke sessions",
-      "deleteAccount": "Failed to delete account"
+      "deleteAccount": "Failed to delete account",
+      "serverError": "A server error occurred. Please try again later.",
+      "logto": {
+        "password__rejected": "Password does not meet the requirements.",
+        "password_rejected__too_short": "Password is too short. It must be at least 8 characters.",
+        "password_rejected__character_types": "Password must include a mix of uppercase, lowercase, numbers, and special characters.",
+        "password_rejected__pwned": "This password has been found in a data breach. Please choose a different, more secure password.",
+        "password_rejected__restricted_found": "Password contains restricted words. Please choose a different one.",
+        "password_rejected__sequential_chars": "Password contains too many sequential characters (e.g., 1234, abcd).",
+        "password_rejected__repeated_chars": "Password contains too many repeated characters (e.g., aaaa).",
+        "password_rejected__user_info": "Password should not contain your personal information (name, email, etc.).",
+        "session__verification_session_not_found": "Verification session expired. Please try again.",
+        "session__verification_failed": "The current password you entered is incorrect.",
+        "verification_record__not_found": "Verification failed. Please enter your current password.",
+        "user__same_password": "New password cannot be the same as your old password.",
+        "unknown": "An unexpected error occurred. Please try again."
+      }
     }
   }
 }

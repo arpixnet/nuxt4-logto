@@ -67,7 +67,9 @@
     "emailRequired": "El correo es requerido",
     "emailInvalid": "Por favor ingrese un correo válido",
     "passwordRequired": "La contraseña es requerida",
-    "passwordMinLength": "La contraseña debe tener al menos 8 caracteres"
+    "passwordMinLength": "La contraseña debe tener al menos 8 caracteres",
+    "nameRequired": "El nombre es requerido",
+    "currentPasswordRequired": "La contraseña actual es requerida"
   },
   "auth": {
     "login": {
@@ -240,6 +242,19 @@
     "newPassword": "Nueva Contraseña",
     "confirmPassword": "Confirmar Nueva Contraseña",
     "updatePassword": "Actualizar Contraseña",
+    "passwordStrength": {
+      "enter": "Ingresa una contraseña",
+      "weak": "Contraseña débil",
+      "medium": "Contraseña media",
+      "strong": "Contraseña fuerte",
+      "mustContain": "Debe contener:",
+      "minLength": "Al menos 8 caracteres",
+      "lowercase": "Al menos 1 letra minúscula",
+      "uppercase": "Al menos 1 letra mayúscula",
+      "number": "Al menos 1 número",
+      "met": "Requisito cumplido",
+      "notMet": "Requisito no cumplido"
+    },
     "security": "Seguridad",
     "twoFactorAuth": "Autenticación de Dos Factores",
     "twoFactorDescription": "Añade una capa extra de seguridad a tu cuenta",
@@ -320,13 +335,30 @@
       "updateProfile": "Fallo al actualizar perfil",
       "changePassword": "Fallo al cambiar contraseña",
       "incorrectPassword": "Contraseña incorrecta",
+      "incorrectCurrentPassword": "La contraseña actual que ingresaste es incorrecta.",
       "invalidCode": "Código inválido",
       "verificationFailed": "Verificación fallida",
       "disable2FA": "Fallo al desactivar 2FA",
       "loadSessions": "Fallo al cargar sesiones",
       "revokeSession": "Fallo al revocar sesión",
       "revokeAllSessions": "Fallo al revocar sesiones",
-      "deleteAccount": "Fallo al eliminar cuenta"
+      "deleteAccount": "Fallo al eliminar cuenta",
+      "serverError": "Ocurrió un error en el servidor. Por favor intenta más tarde.",
+      "logto": {
+        "password__rejected": "La contraseña no cumple con los requisitos.",
+        "password_rejected__too_short": "La contraseña es muy corta. Debe tener al menos 8 caracteres.",
+        "password_rejected__character_types": "La contraseña debe incluir una combinación de mayúsculas, minúsculas, números y caracteres especiales.",
+        "password_rejected__pwned": "Esta contraseña fue encontrada en una filtración de datos. Por favor elige otra contraseña más segura.",
+        "password_rejected__restricted_found": "La contraseña contiene palabras restringidas. Por favor elige otra.",
+        "password_rejected__sequential_chars": "La contraseña contiene demasiados caracteres secuenciales (ej: 1234, abcd).",
+        "password_rejected__repeated_chars": "La contraseña contiene demasiados caracteres repetidos (ej: aaaa).",
+        "password_rejected__user_info": "La contraseña no debe contener tu información personal (nombre, correo, etc.).",
+        "session__verification_session_not_found": "La sesión de verificación expiró. Por favor intenta de nuevo.",
+        "session__verification_failed": "La contraseña actual que ingresaste es incorrecta.",
+        "verification_record__not_found": "Verificación fallida. Por favor ingresa tu contraseña actual.",
+        "user__same_password": "La nueva contraseña no puede ser igual a tu contraseña anterior.",
+        "unknown": "Ocurrió un error inesperado. Por favor intenta de nuevo."
+      }
     }
   }
 }
