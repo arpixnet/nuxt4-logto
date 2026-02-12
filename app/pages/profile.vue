@@ -207,14 +207,18 @@ const is2FAEnabled = computed(() => mfaStatus.value.enabled)
 const is2FAModalOpen = ref(false)
 const isDisable2FAModalOpen = ref(false)
 const disable2FAPassword = ref('')
+const showDisable2FAPassword = ref(false)
+const showTotpPassword = ref(false)
 const totpStep = ref<'start' | 'scan' | 'verify' | 'password'>('start')
 const totpData = ref<{ secret: string, qrCodeUri: string, verificationId?: string } | null>(null)
-const totpCode = ref('')
+const totpCode = ref<string[]>([])
 const totpPassword = ref('')
 
 async function start2FAFlow() {
   totpStep.value = 'start'
   totpPassword.value = ''
+  totpCode.value = []
+  showTotpPassword.value = false
   is2FAModalOpen.value = true
   // Retrieve secret
   try {
@@ -237,10 +241,11 @@ async function verify2FASetup() {
       return
     }
 
-    await verifyTotp(totpCode.value, totpData.value.secret, totpData.value.verificationId, totpPassword.value || undefined)
+    const code = totpCode.value.join('')
+    await verifyTotp(code, totpData.value.secret, totpData.value.verificationId, totpPassword.value || undefined)
     toast.add({ title: t('profile.toasts.twoFactorEnabled'), color: 'success' })
     is2FAModalOpen.value = false
-    totpCode.value = ''
+    totpCode.value = []
     totpPassword.value = ''
 
     // Refresh the page to update the session and show 2FA as enabled
@@ -262,6 +267,7 @@ async function verify2FASetup() {
 async function disable2FA() {
   // Show the disable modal instead of using confirm()
   disable2FAPassword.value = ''
+  showDisable2FAPassword.value = false
   isDisable2FAModalOpen.value = true
 }
 
@@ -545,29 +551,43 @@ async function confirmDisable2FA() {
       </template>
     </UTabs>
 
-    <!-- 2FA Modal -->
-    <!-- 2FA Modal -->
+    <!-- 2FA Setup Modal -->
     <UModal
       v-model:open="is2FAModalOpen"
       :title="totpStep === 'password' ? t('profile.modals.twoFactor.passwordRequired') : t('profile.modals.twoFactor.scanQrTitle')"
     >
       <template #content>
-        <div class="p-6">
+        <div class="p-6 space-y-4">
           <!-- Password Step - Required when verificationId is missing -->
           <div
             v-if="totpStep === 'password'"
-            class="text-center space-y-4"
+            class="space-y-4"
           >
-            <p class="text-sm text-gray-600">
+            <p class="text-sm text-gray-600 text-center">
               {{ t('profile.modals.twoFactor.passwordDesc') }}
             </p>
             <UFormField :label="t('profile.currentPassword')">
               <UInput
                 v-model="totpPassword"
-                type="password"
+                :type="showTotpPassword ? 'text' : 'password'"
                 placeholder="••••••••"
+                autofocus
+                icon="i-lucide-lock"
+                :ui="{ trailing: 'pe-1' }"
                 class="w-full"
-              />
+              >
+                <template #trailing>
+                  <UButton
+                    color="neutral"
+                    variant="link"
+                    size="sm"
+                    :icon="showTotpPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                    :aria-label="showTotpPassword ? 'Hide password' : 'Show password'"
+                    :aria-pressed="showTotpPassword"
+                    @click="showTotpPassword = !showTotpPassword"
+                  />
+                </template>
+              </UInput>
             </UFormField>
             <div class="flex gap-2">
               <UButton
@@ -592,13 +612,15 @@ async function confirmDisable2FA() {
           <!-- Scan QR Step -->
           <div
             v-else-if="totpStep === 'scan'"
-            class="text-center space-y-4"
+            class="space-y-4"
           >
-            <p>{{ t('profile.modals.twoFactor.scanQrDesc') }}</p>
+            <p class="text-sm text-gray-600 text-center">
+              {{ t('profile.modals.twoFactor.scanQrDesc') }}
+            </p>
             <!-- QR Code display - Only show what Logto provides -->
             <div
               v-if="totpData?.qrCodeUri"
-              class="flex flex-col items-center gap-4"
+              class="flex justify-center"
             >
               <div class="p-4 bg-white rounded">
                 <!-- If qrCodeUri is a data URI, render it directly as image -->
@@ -622,16 +644,24 @@ async function confirmDisable2FA() {
               v-if="totpData?.secret"
               class="text-xs text-gray-500 text-center"
             >
-              {{ t('profile.modals.twoFactor.manualEntry') }} <span class="font-mono bg-gray-100 px-1 rounded">{{ totpData.secret }}</span>
+              {{ t('profile.modals.twoFactor.manualEntry') }} <span class="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">{{ totpData.secret }}</span>
             </div>
 
-            <UFormField :label="t('profile.modals.twoFactor.enterCode')">
-              <UInput
-                v-model="totpCode"
-                placeholder="000000"
-                class="text-center text-xl tracking-widest w-full"
-              />
-            </UFormField>
+            <div class="space-y-2">
+              <p class="text-sm font-medium text-center">
+                {{ t('profile.modals.twoFactor.enterCode') }}
+              </p>
+              <div class="flex justify-center">
+                <UPinInput
+                  v-model="totpCode"
+                  :length="6"
+                  otp
+                  autofocus
+                  size="lg"
+                  @complete="verify2FASetup"
+                />
+              </div>
+            </div>
 
             <UButton
               block
@@ -652,19 +682,34 @@ async function confirmDisable2FA() {
       :title="t('profile.modals.disableTwoFactor.title')"
     >
       <template #content>
-        <div class="p-6">
-          <p class="text-sm text-gray-600 mb-4">
+        <div class="p-6 space-y-4">
+          <p class="text-sm text-gray-600 text-center">
             {{ t('profile.modals.disableTwoFactor.description') }}
           </p>
           <UFormField :label="t('profile.currentPassword')">
             <UInput
               v-model="disable2FAPassword"
-              type="password"
+              :type="showDisable2FAPassword ? 'text' : 'password'"
               placeholder="••••••••"
+              autofocus
+              icon="i-lucide-lock"
+              :ui="{ trailing: 'pe-1' }"
               class="w-full"
-            />
+            >
+              <template #trailing>
+                <UButton
+                  color="neutral"
+                  variant="link"
+                  size="sm"
+                  :icon="showDisable2FAPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                  :aria-label="showDisable2FAPassword ? 'Hide password' : 'Show password'"
+                  :aria-pressed="showDisable2FAPassword"
+                  @click="showDisable2FAPassword = !showDisable2FAPassword"
+                />
+              </template>
+            </UInput>
           </UFormField>
-          <div class="flex gap-2 mt-4">
+          <div class="flex gap-2">
             <UButton
               color="neutral"
               variant="ghost"
