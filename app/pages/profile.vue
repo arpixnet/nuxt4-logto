@@ -28,18 +28,21 @@ const profileFormState = reactive<{
   username: string
   email: string
   phone: string
+  address: string
 }>({
   name: session.value?.user?.name || '',
   username: session.value?.user?.username || '',
   email: session.value?.user?.email || '',
-  phone: (session.value?.user?.phoneNumber as string) || ''
+  phone: (session.value?.user?.phoneNumber as string) || '',
+  address: (session.value?.user?.custom_data?.address as string) || ''
 })
 
 const schemaProfile = computed(() => z.object({
   name: z.string().min(1, t('validation.nameRequired')),
   username: z.string().optional(),
   email: z.string().email(t('validation.emailInvalid')),
-  phone: z.string().optional()
+  phone: z.string().optional(),
+  address: z.string().optional()
 }))
 
 type ProfileSchema = z.output<typeof schemaProfile.value>
@@ -48,7 +51,10 @@ async function onProfileSubmit(event: FormSubmitEvent<ProfileSchema>) {
   try {
     await updateProfile({
       name: event.data.name,
-      username: event.data.username
+      username: event.data.username,
+      customData: {
+        address: event.data.address
+      }
     })
     toast.add({ title: t('profile.toasts.profileUpdated'), color: 'success' })
   } catch {
@@ -364,6 +370,17 @@ async function confirmDisable2FA() {
               />
             </UFormField>
 
+            <UFormField
+              :label="t('profile.address')"
+              name="address"
+            >
+              <UInput
+                v-model="profileFormState.address"
+                icon="i-heroicons-map-pin"
+                class="w-full"
+              />
+            </UFormField>
+
             <div class="flex justify-end">
               <UButton
                 type="submit"
@@ -491,7 +508,6 @@ async function confirmDisable2FA() {
                 <UButton
                   type="submit"
                   :loading="loading"
-                  color="neutral"
                 >
                   {{ t('profile.updatePassword') }}
                 </UButton>
@@ -523,10 +539,10 @@ async function confirmDisable2FA() {
             <div class="flex justify-between items-center">
               <div class="text-sm">
                 <p v-if="is2FAEnabled">
-                  Your account is secured with 2FA.
+                  {{ t('profile.2FASecured') }}
                 </p>
                 <p v-else>
-                  Protect your account by enabling Two-Factor Authentication.
+                  {{ t('profile.2FANotEnabled') }}
                 </p>
               </div>
               <UButton
