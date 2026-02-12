@@ -97,7 +97,10 @@ export default defineNuxtConfig({
       UserScope.CustomData,
       UserScope.Identities,
       UserScope.Profile,
-      UserScope.Address
+      UserScope.Address,
+      UserScope.Organizations,
+      UserScope.OrganizationRoles,
+      UserScope.Roles
     ],
     fetchUserInfo: true
   }
