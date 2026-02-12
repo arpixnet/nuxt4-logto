@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
     const userMfa = await $fetch(`${logtoEndpoint}/api/users/${userId}/mfa-verifications`, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${m2mTokenResponse.access_token}`,
+        'Authorization': `Bearer ${m2mTokenResponse.access_token}`,
         'Content-Type': 'application/json'
       }
     })

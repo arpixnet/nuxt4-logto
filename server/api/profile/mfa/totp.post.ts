@@ -35,7 +35,7 @@ const proxyLogto = async (event: H3Event, path: string, options: Record<string, 
       ...options,
       headers: {
         ...options.headers as Record<string, string>,
-        Authorization: `Bearer ${accessToken}`,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
       }
     })

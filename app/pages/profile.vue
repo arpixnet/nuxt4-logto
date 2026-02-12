@@ -10,7 +10,7 @@ definePageMeta({
 
 const { t } = useI18n()
 const { session } = useAuthSession()
-const { updateProfile, changePassword, setupTotp, verifyTotp, disableTotp, getMfaStatus, loading, error } = useUserProfile()
+const { updateProfile, changePassword, setupTotp, verifyTotp, disableTotp, getMfaStatus, loading, error: _error } = useUserProfile()
 const toast = useToast()
 
 // Tabs
@@ -42,14 +42,16 @@ const schemaProfile = computed(() => z.object({
   phone: z.string().optional()
 }))
 
-async function onProfileSubmit(event: FormSubmitEvent<any>) {
+type ProfileSchema = z.output<typeof schemaProfile.value>
+
+async function onProfileSubmit(event: FormSubmitEvent<ProfileSchema>) {
   try {
     await updateProfile({
       name: event.data.name,
       username: event.data.username
     })
     toast.add({ title: t('profile.toasts.profileUpdated'), color: 'success' })
-  } catch (e) {
+  } catch {
     toast.add({ title: t('profile.errors.updateProfile'), color: 'error' })
   }
 }
@@ -99,20 +101,32 @@ const schemaPassword = computed(() => z.object({
   password: z.string().min(8, t('validation.passwordMinLength'))
 }))
 
-async function onPasswordSubmit(event: FormSubmitEvent<any>) {
+type PasswordSchema = z.output<typeof schemaPassword.value>
+
+interface PasswordErrorData {
+  errorType?: 'verification' | 'password_update'
+  code?: string
+  subCodes?: string[]
+}
+
+interface ServerError {
+  data?: { data?: PasswordErrorData }
+}
+
+async function onPasswordSubmit(event: FormSubmitEvent<PasswordSchema>) {
   try {
     await changePassword(event.data.password, event.data.currentPassword)
     toast.add({ title: t('profile.toasts.passwordChanged'), color: 'success' })
     passwordState.currentPassword = ''
     passwordState.password = ''
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error(e)
-    const errorData = e?.data?.data // server createError puts our data here
+    const serverError = e as ServerError
+    const errorData = serverError?.data?.data // server createError puts our data here
     const { title, description } = resolvePasswordError(errorData)
     toast.add({ title, description, color: 'error' })
   }
 }
-
 
 /**
  * Resolve a password change error into specific i18n title + description.
@@ -121,7 +135,7 @@ async function onPasswordSubmit(event: FormSubmitEvent<any>) {
  * - code: normalized Logto code (dots → __)
  * - subCodes: array of normalized specific rejection reasons
  */
-function resolvePasswordError(errorData: any): { title: string; description: string } {
+function resolvePasswordError(errorData?: PasswordErrorData): { title: string, description: string } {
   if (!errorData) {
     return {
       title: t('profile.errors.changePassword'),
@@ -143,7 +157,8 @@ function resolvePasswordError(errorData: any): { title: string; description: str
   if (errorType === 'password_update') {
     if (Array.isArray(subCodes) && subCodes.length > 0) {
       const messages = subCodes
-        .map((sc: string) => tryLogtoKey(sc))
+        .filter((sc): sc is string => typeof sc === 'string')
+        .map(sc => tryLogtoKey(sc))
         .filter(Boolean)
       if (messages.length > 0) {
         return {
@@ -172,7 +187,7 @@ function resolvePasswordError(errorData: any): { title: string; description: str
 }
 
 /** Try to find a translated message for a normalized Logto error code */
-function tryLogtoKey(code: string): string | null {
+function tryLogtoKey(code: string | undefined): string | null {
   if (!code) return null
   const key = `profile.errors.logto.${code}`
   const translated = t(key)
@@ -180,7 +195,7 @@ function tryLogtoKey(code: string): string | null {
 }
 
 // 2FA - Fetch status from server (queries Logto directly)
-const mfaStatus = ref<{ enabled: boolean; factors: string[] }>({ enabled: false, factors: [] })
+const mfaStatus = ref<{ enabled: boolean, factors: string[] }>({ enabled: false, factors: [] })
 
 // Fetch MFA status on mount
 onMounted(async () => {
@@ -264,7 +279,10 @@ async function disable2FA() {
       </p>
     </div>
 
-    <UTabs :items="items" class="w-full">
+    <UTabs
+      :items="items"
+      class="w-full"
+    >
       <template #profile>
         <UCard class="mt-4">
           <template #header>

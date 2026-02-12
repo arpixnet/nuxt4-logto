@@ -1,9 +1,32 @@
 import { ref } from 'vue'
 
+// Type definitions for profile operations
+interface ProfileUpdateData {
+  name?: string
+  email?: string
+  [key: string]: unknown
+}
+
+interface TotpSetupResponse {
+  secret: string
+  qrCodeUri: string
+  verificationId?: string
+}
+
+interface TotpVerifyResponse {
+  success: boolean
+  message?: string
+}
+
+interface MfaStatusResponse {
+  enabled: boolean
+  factors: string[]
+}
+
 export const useUserProfile = () => {
   // useLogtoUser returns the user object, not a composable with fetch.
   // We rely on session updates or page reloads for now.
-  const { session } = useAuthSession()
+  const { session: _session } = useAuthSession()
 
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -14,15 +37,16 @@ export const useUserProfile = () => {
     try {
       // Placeholder for fetching extended profile if needed
       // await fetchUser()
-    } catch (e: any) {
-      error.value = e.message
+    } catch (e: unknown) {
+      const err = e as Error
+      error.value = err.message
       console.error(e)
     } finally {
       loading.value = false
     }
   }
 
-  const updateProfile = async (data: any) => {
+  const updateProfile = async (data: ProfileUpdateData) => {
     loading.value = true
     error.value = null
     try {
@@ -31,8 +55,9 @@ export const useUserProfile = () => {
         body: data
       })
       // await fetchUser()
-    } catch (e: any) {
-      error.value = e.message || 'Failed to update profile'
+    } catch (e: unknown) {
+      const err = e as Error
+      error.value = err.message || 'Failed to update profile'
       throw e
     } finally {
       loading.value = false
@@ -47,8 +72,9 @@ export const useUserProfile = () => {
         method: 'PATCH',
         body: { password, currentPassword }
       })
-    } catch (e: any) {
-      error.value = e.message || 'Failed to change password'
+    } catch (e: unknown) {
+      const err = e as Error
+      error.value = err.message || 'Failed to change password'
       throw e
     } finally {
       loading.value = false
@@ -60,12 +86,13 @@ export const useUserProfile = () => {
     loading.value = true
     error.value = null
     try {
-      const response = await $fetch<any>('/api/profile/mfa/totp', {
+      const response = await $fetch<TotpSetupResponse>('/api/profile/mfa/totp', {
         method: 'POST'
       })
       return response // { secret, qrCodeUri }
-    } catch (e: any) {
-      error.value = e.message
+    } catch (e: unknown) {
+      const err = e as Error
+      error.value = err.message
       throw e
     } finally {
       loading.value = false
@@ -76,7 +103,7 @@ export const useUserProfile = () => {
     loading.value = true
     error.value = null
     try {
-      const result = await $fetch('/api/profile/mfa/totp/verify', {
+      const result = await $fetch<TotpVerifyResponse>('/api/profile/mfa/totp/verify', {
         method: 'POST',
         body: { code, secret, verificationId, password }
       })
@@ -111,7 +138,7 @@ export const useUserProfile = () => {
 
   const getMfaStatus = async () => {
     try {
-      const result = await $fetch<{ enabled: boolean; factors: string[] }>('/api/profile/mfa/status', {
+      const result = await $fetch<MfaStatusResponse>('/api/profile/mfa/status', {
         method: 'GET'
       })
       return result
@@ -134,4 +161,3 @@ export const useUserProfile = () => {
     getMfaStatus
   }
 }
-

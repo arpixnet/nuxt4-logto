@@ -1,7 +1,13 @@
 import type { H3Event } from 'h3'
 
-const proxyLogto = async (event: H3Event, path: string, options: any = {}) => {
-  const client = event.context.logtoClient as any
+type ProxyOptions = {
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+  body?: Record<string, unknown> | null
+  headers?: Record<string, string>
+}
+
+const proxyLogto = async (event: H3Event, path: string, options: ProxyOptions = {}) => {
+  const client = event.context.logtoClient as { getAccessToken: () => Promise<string> } | undefined
   if (!client) {
     throw createError({
       statusCode: 401,
@@ -13,20 +19,21 @@ const proxyLogto = async (event: H3Event, path: string, options: any = {}) => {
     const accessToken = await client.getAccessToken()
     const logtoEndpoint = process.env.NUXT_LOGTO_ENDPOINT || 'http://localhost:3001'
     const apiBase = `${logtoEndpoint}/api/my-account`
-    
+
     return await $fetch(`${apiBase}${path}`, {
       ...options,
       headers: {
         ...options.headers,
-        Authorization: `Bearer ${accessToken}`,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
       }
     })
-  } catch (e: any) {
-    console.error('Logto API proxy error:', e)
+  } catch (e) {
+    const error = e as { response?: { status: number }, message?: string }
+    console.error('Logto API proxy error:', error)
     throw createError({
-      statusCode: e.response?.status || 500,
-      message: e.message || 'Failed to communicate with Logto'
+      statusCode: error.response?.status || 500,
+      message: error.message || 'Failed to communicate with Logto'
     })
   }
 }
