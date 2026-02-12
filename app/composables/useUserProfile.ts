@@ -118,13 +118,14 @@ export const useUserProfile = () => {
     }
   }
 
-  const disableTotp = async () => {
+  const disableTotp = async (password: string) => {
     loading.value = true
     error.value = null
     try {
-      // We assume the server handles finding the correct MFA ID to delete
+      // Server requires password verification to delete MFA
       await $fetch('/api/profile/mfa/totp', {
-        method: 'DELETE'
+        method: 'DELETE',
+        body: { password }
       })
       // await fetchUser()
     } catch (e: unknown) {

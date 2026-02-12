@@ -1,3 +1,9 @@
+interface LogtoMfaFactor {
+  id: string
+  type: 'Totp' | 'BackupCode' | 'WebAuthn'
+  createdAt?: number
+}
+
 interface LogtoErrorResponse {
   response?: {
     status?: number
@@ -10,51 +16,48 @@ interface LogtoErrorResponse {
 }
 
 export default defineEventHandler(async (event) => {
-  // Get user ID from session
-  const session = event.context.session as { user?: { sub?: string } } | undefined
-  const userId = session?.user?.sub
+  // Get the Logto client from context (injected by @logto/nuxt)
+  const client = event.context.logtoClient as { getAccessToken: () => Promise<string> } | undefined
 
-  if (!userId) {
+  if (!client) {
     throw createError({
       statusCode: 401,
-      message: 'User ID not found in session'
+      message: 'Unauthorized: Logto client not available'
     })
   }
 
   const logtoEndpoint = process.env.NUXT_LOGTO_ENDPOINT || 'http://localhost:3001'
-  const managementApiResource = `${logtoEndpoint}/api`
 
   try {
-    // Get M2M access token for Management API (more reliable than my-account API which requires identity scope)
-    const m2mTokenResponse = await $fetch(`${logtoEndpoint}/oidc/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: process.env.NUXT_LOGTO_CLIENT_ID || '',
-        client_secret: process.env.NUXT_LOGTO_CLIENT_SECRET || '',
-        resource: managementApiResource,
-        scope: 'all'
-      }).toString()
-    }) as { access_token: string }
+    // Get the user's access token
+    const accessToken = await client.getAccessToken()
 
-    // Get user's MFA verifications from Management API
-    const userMfa = await $fetch(`${logtoEndpoint}/api/users/${userId}/mfa-verifications`, {
+    // Use my-account API to get MFA verifications
+    // This endpoint works with the user's access token and doesn't require M2M credentials
+    const response = await $fetch(`${logtoEndpoint}/api/my-account/mfa-verifications`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${m2mTokenResponse.access_token}`,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
       }
     })
 
-    console.log('MFA status response from Management API:', JSON.stringify(userMfa, null, 2))
+    console.log('MFA status response from my-account API:', JSON.stringify(response, null, 2))
 
-    const mfaData = userMfa as { data?: Array<{ type: string, id: string }> }
-    const hasTotp = mfaData.data?.some(mfa => mfa.type === 'Totp') ?? false
+    // Handle both response formats: direct array or { data: array }
+    let mfaFactors: LogtoMfaFactor[] = []
+    if (Array.isArray(response)) {
+      mfaFactors = response
+    } else if (response && typeof response === 'object' && 'data' in response && Array.isArray((response as { data: unknown }).data)) {
+      mfaFactors = (response as { data: LogtoMfaFactor[] }).data
+    }
+
+    // Check if user has TOTP enabled
+    const hasTotp = mfaFactors.some(mfa => mfa.type === 'Totp')
 
     return {
       enabled: hasTotp,
-      factors: mfaData.data?.map(mfa => mfa.type) ?? []
+      factors: mfaFactors.map(mfa => mfa.type)
     }
   } catch (e: unknown) {
     const error = e as LogtoErrorResponse

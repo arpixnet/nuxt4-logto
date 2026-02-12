@@ -205,6 +205,8 @@ onMounted(async () => {
 const is2FAEnabled = computed(() => mfaStatus.value.enabled)
 
 const is2FAModalOpen = ref(false)
+const isDisable2FAModalOpen = ref(false)
+const disable2FAPassword = ref('')
 const totpStep = ref<'start' | 'scan' | 'verify' | 'password'>('start')
 const totpData = ref<{ secret: string, qrCodeUri: string, verificationId?: string } | null>(null)
 const totpCode = ref('')
@@ -258,12 +260,23 @@ async function verify2FASetup() {
 }
 
 async function disable2FA() {
-  if (!confirm(t('profile.modals.disableTwoFactor.description'))) return
+  // Show the disable modal instead of using confirm()
+  disable2FAPassword.value = ''
+  isDisable2FAModalOpen.value = true
+}
+
+async function confirmDisable2FA() {
+  if (!disable2FAPassword.value) return
+
   try {
-    await disableTotp()
+    await disableTotp(disable2FAPassword.value)
     toast.add({ title: t('profile.toasts.twoFactorDisabled'), color: 'success' })
+    isDisable2FAModalOpen.value = false
+    disable2FAPassword.value = ''
+    // Refresh to update the MFA status
+    window.location.reload()
   } catch {
-    toast.add({ title: t('profile.errors.disable2FA'), color: 'error' })
+    toast.add({ title: t('profile.errors.incorrectCurrentPassword'), color: 'error' })
   }
 }
 </script>
@@ -563,7 +576,7 @@ async function disable2FA() {
                 block
                 @click="totpStep = 'scan'"
               >
-                {{ t('common.back') }}
+                {{ t('profile.cancel') }}
               </UButton>
               <UButton
                 block
@@ -627,6 +640,47 @@ async function disable2FA() {
               @click="verify2FASetup"
             >
               {{ t('profile.modals.twoFactor.verifyAndActivate') }}
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Disable 2FA Modal -->
+    <UModal
+      v-model:open="isDisable2FAModalOpen"
+      :title="t('profile.modals.disableTwoFactor.title')"
+    >
+      <template #content>
+        <div class="p-6">
+          <p class="text-sm text-gray-600 mb-4">
+            {{ t('profile.modals.disableTwoFactor.description') }}
+          </p>
+          <UFormField :label="t('profile.currentPassword')">
+            <UInput
+              v-model="disable2FAPassword"
+              type="password"
+              placeholder="••••••••"
+              class="w-full"
+            />
+          </UFormField>
+          <div class="flex gap-2 mt-4">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              block
+              @click="isDisable2FAModalOpen = false"
+            >
+              {{ t('profile.cancel') }}
+            </UButton>
+            <UButton
+              color="error"
+              block
+              :disabled="!disable2FAPassword"
+              :loading="loading"
+              @click="confirmDisable2FA"
+            >
+              {{ t('profile.modals.disableTwoFactor.disable2FA') }}
             </UButton>
           </div>
         </div>
