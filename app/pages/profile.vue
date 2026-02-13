@@ -253,14 +253,16 @@ async function verify2FASetup() {
     const code = totpCode.value.join('')
     await verifyTotp(code, totpData.value.secret, totpData.value.verificationId, totpPassword.value || undefined)
     toast.add({ title: t('profile.toasts.twoFactorEnabled'), color: 'success' })
+
+    // Update local MFA status without page reload
+    mfaStatus.value = { enabled: true, factors: ['Totp'] }
+
+    // Reset form and close modal
     is2FAModalOpen.value = false
     totpCode.value = []
     totpPassword.value = ''
-
-    // Refresh the page to update the session and show 2FA as enabled
-    // The session needs to be refreshed from the server to get updated MFA claims
-    await nextTick()
-    window.location.reload()
+    totpStep.value = 'start'
+    totpData.value = null
   } catch (e: unknown) {
     const errorObj = e as { data?: { data?: { code?: string } } }
     const errorData = errorObj?.data?.data
@@ -286,10 +288,13 @@ async function confirmDisable2FA() {
   try {
     await disableTotp(disable2FAPassword.value)
     toast.add({ title: t('profile.toasts.twoFactorDisabled'), color: 'success' })
+
+    // Update local MFA status without page reload
+    mfaStatus.value = { enabled: false, factors: [] }
+
+    // Close modal and reset form
     isDisable2FAModalOpen.value = false
     disable2FAPassword.value = ''
-    // Refresh to update the MFA status
-    window.location.reload()
   } catch {
     toast.add({ title: t('profile.errors.incorrectCurrentPassword'), color: 'error' })
   }
