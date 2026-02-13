@@ -93,6 +93,7 @@
       "met": "Requirement met",
       "notMet": "Requirement not met"
     },
+    "security": "Security",
     "twoFactorAuth": "Two-Factor Authentication",
     "twoFactorDescription": "Add an extra layer of security to your account",
     "2FASecured": "Your account is secured with 2FA.",

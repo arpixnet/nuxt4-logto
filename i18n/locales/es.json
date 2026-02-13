@@ -93,6 +93,7 @@
       "met": "Requisito cumplido",
       "notMet": "Requisito no cumplido"
     },
+    "security": "Seguridad",
     "twoFactorAuth": "Autenticación de Dos Factores",
     "twoFactorDescription": "Añade una capa extra de seguridad a tu cuenta",
     "2FASecured": "Tu cuenta está protegida con 2FA.",
