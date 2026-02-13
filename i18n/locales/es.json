@@ -121,7 +121,8 @@
       },
       "disableTwoFactor": {
         "title": "Desactivar Autenticación de Dos Factores",
-        "description": "Por favor confirma tu contraseña para desactivar la autenticación de dos factores."
+        "description": "Por favor confirma tu contraseña para desactivar la autenticación de dos factores.",
+        "disable2FA": "Desactivar 2FA"
       },
       "deleteAccount": {
         "title": "Eliminar Cuenta",

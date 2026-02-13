@@ -121,7 +121,8 @@
       },
       "disableTwoFactor": {
         "title": "Disable Two-Factor Authentication",
-        "description": "Please confirm your password to disable two-factor authentication."
+        "description": "Please confirm your password to disable two-factor authentication.",
+        "disable2FA": "Disable 2FA"
       },
       "deleteAccount": {
         "title": "Delete Account",
