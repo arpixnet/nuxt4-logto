@@ -29,17 +29,27 @@
 
 import { authLogger, logError } from '../../utils/logger'
 
+/**
+ * Logto client interface with the methods we need
+ * The actual client from @logto/nuxt has these methods at runtime
+ */
+interface LogtoClientMethods {
+  getIdToken: () => Promise<string | null>
+  getContext: (params?: { fetchUserInfo?: boolean }) => Promise<{
+    isAuthenticated: boolean
+    userInfo?: {
+      sub?: string
+      email?: string
+      name?: string
+      picture?: string
+      [key: string]: unknown
+    }
+  }>
+}
+
 export default defineEventHandler(async (event) => {
   // Logto client is initialized by server/middleware/api-auth.ts
-  const client = event.context.logtoClient as unknown as {
-    getIdToken: () => Promise<string | null>
-    getContext: (params?: { getAccessToken?: boolean, fetchUserInfo?: boolean }) => Promise<{
-      isAuthenticated: boolean
-      claims?: unknown
-      accessToken?: string
-      userInfo?: unknown
-    }>
-  }
+  const client = event.context.logtoClient as unknown as LogtoClientMethods | undefined
 
   if (!client) {
     authLogger.error('Logto client not available')

@@ -1,10 +1,49 @@
 /**
+ * Logto Type Definitions
+ *
+ * This file contains all type definitions for Logto integration.
+ */
+
+/**
+ * User custom data stored in Logto
+ * Customize this interface based on your application's custom fields
+ */
+export interface UserCustomData {
+  address?: string
+  birthDate?: string
+  // Add more custom fields here as needed
+  [key: string]: unknown
+}
+
+/**
  * Logto account API client interface
  * Used for accessing user's own account data via my-account API
  */
 export interface LogtoAccountClient {
   getAccessToken: () => Promise<string>
   getIdToken: () => Promise<string | null>
+  getContext: (params?: {
+    getAccessToken?: boolean
+    fetchUserInfo?: boolean
+  }) => Promise<{
+    isAuthenticated: boolean
+    claims?: unknown
+    accessToken?: string
+    userInfo?: LogtoUserInfo
+  }>
+}
+
+/**
+ * Logto user info returned by getContext
+ */
+export interface LogtoUserInfo {
+  sub?: string
+  email?: string
+  name?: string
+  picture?: string
+  username?: string
+  custom_data?: UserCustomData
+  [key: string]: unknown
 }
 
 /**
@@ -53,6 +92,7 @@ export interface LogtoTotpSecretResponse {
 
 /**
  * Logto user info from context
+ * This is the main user type used throughout the application
  */
 export interface LogtoUser {
   sub?: string
@@ -60,6 +100,7 @@ export interface LogtoUser {
   name?: string
   picture?: string
   username?: string
+  custom_data?: UserCustomData
 }
 
 /**

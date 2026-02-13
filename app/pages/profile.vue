@@ -2,6 +2,7 @@
 import { z } from 'zod'
 import type { FormSubmitEvent } from '#ui/types'
 import VueQrcode from '@chenfengyuan/vue-qrcode'
+import type { UserCustomData } from '#imports'
 
 definePageMeta({
   middleware: 'auth',
@@ -41,8 +42,8 @@ const profileFormState = reactive<{
   name: session.value?.user?.name || '',
   username: session.value?.user?.username || '',
   email: session.value?.user?.email || '',
-  phone: (session.value?.user?.phoneNumber as string) || '',
-  address: (session.value?.user?.custom_data?.address as string) || ''
+  phone: session.value?.user?.phone_number || '',
+  address: (session.value?.user?.custom_data as UserCustomData | undefined)?.address || ''
 })
 
 const schemaProfile = computed(() => z.object({
