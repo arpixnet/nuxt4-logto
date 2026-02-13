@@ -115,7 +115,6 @@ export function handleLogtoError(
   context: string,
   errorType: ApiErrorResponse['errorType'] = 'proxy'
 ): never {
-  const logtoError = error as LogtoErrorResponse
   const statusCode = getErrorStatus(error)
   const code = normalizeCode(getErrorCode(error) || 'unknown')
   const message = getErrorMessage(error) || `Failed to ${context}`
