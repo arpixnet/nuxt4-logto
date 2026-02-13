@@ -123,6 +123,11 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { currentPassword, password } = body
 
+  console.log('Password change request:', {
+    hasCurrentPassword: !!currentPassword,
+    hasNewPassword: !!password
+  })
+
   if (!password) {
     throw createError({
       statusCode: 400,
@@ -140,8 +145,9 @@ export default defineEventHandler(async (event) => {
         body: JSON.stringify({ password: currentPassword })
       }) as { verificationRecordId?: string } | undefined
       verificationId = verifyResult?.verificationRecordId
+      console.log('Password verification successful, verificationId:', verificationId?.substring(0, 20))
     } catch (error: unknown) {
-      console.error('Verification error:', error)
+      console.error('Verification error:', JSON.stringify(error, null, 2))
       // This means the current password is wrong
       throw createError({
         statusCode: 422,
@@ -159,7 +165,11 @@ export default defineEventHandler(async (event) => {
     const headers: Record<string, string> = {}
     if (verificationId) {
       headers['logto-verification-id'] = verificationId
+    } else {
+      console.warn('No verificationId available for password update')
     }
+
+    console.log('Sending password update request with headers:', Object.keys(headers))
 
     await logtoFetch(event, '/api/my-account/password', {
       method: 'POST',
@@ -167,22 +177,34 @@ export default defineEventHandler(async (event) => {
       body: JSON.stringify({ password })
     })
 
+    console.log('Password updated successfully')
     return { success: true }
   } catch (error: unknown) {
-    console.error('Password update error:', error)
+    // Extract more detailed error info
+    const errorStatus = getErrorStatus(error)
+    const errorCode = getErrorCode(error)
+    const errorMessage = getErrorMessage(error)
+    const errorSubCodes = getErrorSubCodes(error)
+
+    console.error('Password update error:', {
+      status: errorStatus,
+      code: errorCode,
+      message: errorMessage,
+      subCodes: errorSubCodes,
+      fullError: JSON.stringify(error, null, 2)
+    })
 
     // Extract Logto error code and sub-codes, normalize for i18n
-    const logtoCode = normalizeCode(getErrorCode(error) || 'unknown')
-    const logtoSubCodes = getErrorSubCodes(error)
+    const logtoCode = normalizeCode(errorCode || 'unknown')
 
     throw createError({
-      statusCode: getErrorStatus(error),
+      statusCode: errorStatus,
       data: {
         errorType: 'password_update',
         code: logtoCode,
-        subCodes: logtoSubCodes
+        subCodes: errorSubCodes
       },
-      message: getErrorMessage(error) || 'Failed to change password'
+      message: errorMessage || 'Failed to change password'
     })
   }
 })

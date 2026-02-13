@@ -267,7 +267,12 @@
     "activeSessions": "Active Sessions",
     "sessionsDescription": "Manage devices where you're currently signed in",
     "viewSessions": "View Sessions",
-    "dangerZone": "Danger Zone",
+    "dangerZone": {
+      "title": "Danger Zone",
+      "description": "Irreversible and destructive actions",
+      "deleteAccountDesc": "Once you delete your account, there is no going back. Please be certain.",
+      "deleteAccount": "Delete Account"
+    },
     "deleteAccount": "Delete Account",
     "deleteDescription": "Permanently delete your account and all data",
     "deleteAccountButton": "Delete Account",
@@ -305,11 +310,13 @@
       "deleteAccount": {
         "title": "Delete Account",
         "description": "This action cannot be undone. All your data will be permanently deleted.",
+        "warning": "This action is irreversible. All your data will be permanently lost.",
         "danger": "DANGER: This action is irreversible",
         "dangerDesc": "You will lose access to your account and all associated data forever.",
         "confirmPassword": "Confirm with Password",
         "enterPassword": "Enter your password to confirm",
         "cancel": "Cancel",
+        "confirm": "Delete My Account",
         "delete": "Delete Account"
       }
     },

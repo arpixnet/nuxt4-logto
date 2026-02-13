@@ -10,7 +10,7 @@ definePageMeta({
 
 const { t } = useI18n()
 const { session } = useAuthSession()
-const { updateProfile, changePassword, setupTotp, verifyTotp, disableTotp, getMfaStatus, loading, error: _error } = useUserProfile()
+const { updateProfile, changePassword, setupTotp, verifyTotp, disableTotp, getMfaStatus, deleteAccount, loading, error: _error } = useUserProfile()
 const toast = useToast()
 
 // Tabs
@@ -291,6 +291,25 @@ async function confirmDisable2FA() {
     toast.add({ title: t('profile.errors.incorrectCurrentPassword'), color: 'error' })
   }
 }
+
+// Delete Account
+const isDeleteAccountModalOpen = ref(false)
+const deleteAccountPassword = ref('')
+const showDeleteAccountPassword = ref(false)
+
+async function confirmDeleteAccount() {
+  if (!deleteAccountPassword.value) return
+
+  try {
+    await deleteAccount(deleteAccountPassword.value)
+    toast.add({ title: t('profile.toasts.accountDeleted'), color: 'success' })
+    isDeleteAccountModalOpen.value = false
+    // Redirect to sign-out with full page reload (server-side navigation)
+    window.location.href = '/sign-out'
+  } catch {
+    toast.add({ title: t('profile.errors.incorrectCurrentPassword'), color: 'error' })
+  }
+}
 </script>
 
 <template>
@@ -563,6 +582,34 @@ async function confirmDisable2FA() {
               </UButton>
             </div>
           </UCard>
+
+          <!-- Danger Zone -->
+          <UCard>
+            <template #header>
+              <div>
+                <h3 class="text-lg font-semibold text-red-500">
+                  {{ t('profile.dangerZone.title') }}
+                </h3>
+                <p class="text-sm text-gray-500">
+                  {{ t('profile.dangerZone.description') }}
+                </p>
+              </div>
+            </template>
+
+            <div class="flex justify-between items-center">
+              <div class="text-sm">
+                <p>{{ t('profile.dangerZone.deleteAccountDesc') }}</p>
+              </div>
+              <UButton
+                color="error"
+                variant="outline"
+                icon="i-heroicons-trash"
+                @click="isDeleteAccountModalOpen = true"
+              >
+                {{ t('profile.dangerZone.deleteAccount') }}
+              </UButton>
+            </div>
+          </UCard>
         </div>
       </template>
     </UTabs>
@@ -742,6 +789,76 @@ async function confirmDisable2FA() {
               @click="confirmDisable2FA"
             >
               {{ t('profile.modals.disableTwoFactor.disable2FA') }}
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Delete Account Modal -->
+    <UModal
+      v-model:open="isDeleteAccountModalOpen"
+      :title="t('profile.modals.deleteAccount.title')"
+    >
+      <template #content>
+        <div class="p-6 space-y-4">
+          <div class="text-center space-y-2">
+            <UIcon
+              name="i-heroicons-exclamation-triangle"
+              class="text-red-500 size-12"
+            />
+            <p class="text-sm text-gray-600">
+              {{ t('profile.modals.deleteAccount.description') }}
+            </p>
+            <p class="text-xs text-red-500 font-medium">
+              {{ t('profile.modals.deleteAccount.warning') }}
+            </p>
+          </div>
+          <UFormField :label="t('profile.currentPassword')">
+            <UInput
+              v-model="deleteAccountPassword"
+              :type="showDeleteAccountPassword ? 'text' : 'password'"
+              placeholder="••••••••"
+              name="delete-account-password"
+              autofocus
+              icon="i-lucide-lock"
+              :ui="{ trailing: 'pe-1' }"
+              class="w-full"
+              @keydown.enter.prevent="confirmDeleteAccount"
+            >
+              <template #trailing>
+                <UButton
+                  type="button"
+                  color="neutral"
+                  variant="link"
+                  size="sm"
+                  :icon="showDeleteAccountPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                  :aria-label="showDeleteAccountPassword ? 'Hide password' : 'Show password'"
+                  :aria-pressed="showDeleteAccountPassword"
+                  @click="showDeleteAccountPassword = !showDeleteAccountPassword"
+                />
+              </template>
+            </UInput>
+          </UFormField>
+          <div class="flex gap-2">
+            <UButton
+              type="button"
+              color="neutral"
+              variant="ghost"
+              block
+              @click="isDeleteAccountModalOpen = false"
+            >
+              {{ t('profile.cancel') }}
+            </UButton>
+            <UButton
+              type="button"
+              color="error"
+              block
+              :disabled="!deleteAccountPassword"
+              :loading="loading"
+              @click="confirmDeleteAccount"
+            >
+              {{ t('profile.modals.deleteAccount.confirm') }}
             </UButton>
           </div>
         </div>

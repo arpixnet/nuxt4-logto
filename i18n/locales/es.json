@@ -267,7 +267,12 @@
     "activeSessions": "Sesiones Activas",
     "sessionsDescription": "Administra dispositivos donde estás iniciado sesión",
     "viewSessions": "Ver Sesiones",
-    "dangerZone": "Zona de Peligro",
+    "dangerZone": {
+      "title": "Zona de Peligro",
+      "description": "Acciones irreversibles y destructivas",
+      "deleteAccountDesc": "Una vez que elimines tu cuenta, no hay vuelta atrás. Por favor, esté seguro.",
+      "deleteAccount": "Eliminar Cuenta"
+    },
     "deleteAccount": "Eliminar Cuenta",
     "deleteDescription": "Eliminar permanentemente tu cuenta y todos los datos",
     "deleteAccountButton": "Eliminar Cuenta",
@@ -305,11 +310,13 @@
       "deleteAccount": {
         "title": "Eliminar Cuenta",
         "description": "Esta acción no se puede deshacer. Todos tus datos serán eliminados permanentemente.",
+        "warning": "Esta acción es irreversible. Todos tus datos se perderán permanentemente.",
         "danger": "PELIGRO: Esta acción es irreversible",
         "dangerDesc": "Perderás acceso a tu cuenta y todos los datos asociados para siempre.",
         "confirmPassword": "Confirmar con Contraseña",
         "enterPassword": "Ingresa tu contraseña para confirmar",
         "cancel": "Cancelar",
+        "confirm": "Eliminar Mi Cuenta",
         "delete": "Eliminar Cuenta"
       }
     },

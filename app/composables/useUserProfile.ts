@@ -150,6 +150,23 @@ export const useUserProfile = () => {
     }
   }
 
+  const deleteAccount = async (password: string) => {
+    loading.value = true
+    error.value = null
+    try {
+      await $fetch('/api/profile/account', {
+        method: 'DELETE',
+        body: { password }
+      })
+    } catch (e: unknown) {
+      const err = e as Error
+      error.value = err.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     loading,
     error,
@@ -159,6 +176,7 @@ export const useUserProfile = () => {
     setupTotp,
     verifyTotp,
     disableTotp,
-    getMfaStatus
+    getMfaStatus,
+    deleteAccount
   }
 }
