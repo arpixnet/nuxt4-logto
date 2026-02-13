@@ -1,5 +1,6 @@
 import type { LogtoPasswordVerificationResponse } from '../../types/logto'
 import { createLogger } from '../../utils/logger'
+import { checkRateLimit, throwRateLimitError } from '../../utils/rate-limiter'
 import {
   logtoProxy,
   getErrorCode,
@@ -20,9 +21,22 @@ const logger = createLogger('password-change')
  *
  * Errors are forwarded with { errorType, code, subCodes } so the client
  * can display specific i18n messages.
+ *
+ * Rate limited: 5 attempts per 15 minutes per IP to prevent brute force attacks.
  */
 
 export default defineEventHandler(async (event) => {
+  // Rate limiting: 5 password changes per 15 minutes per IP
+  const rateLimitResult = await checkRateLimit(event, {
+    maxRequests: 5,
+    windowSeconds: 900 // 15 minutes
+  })
+
+  if (!rateLimitResult.allowed) {
+    logger.warn('Password change rate limit exceeded')
+    throwRateLimitError(rateLimitResult)
+  }
+
   const body = await readBody(event)
   const { currentPassword, password } = body
 

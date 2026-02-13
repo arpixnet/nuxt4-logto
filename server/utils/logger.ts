@@ -18,18 +18,47 @@ const isDev = process.env.NODE_ENV !== 'production'
 /**
  * Redaction rules for sensitive data
  * Prevents logging of passwords, tokens, and other sensitive information
+ * Includes nested paths for error responses and API data
  */
 const redactPaths = [
+  // HTTP headers
   'req.headers.authorization',
   'req.headers.cookie',
   'req.headers["set-cookie"]',
+  // Direct sensitive fields
   'password',
+  'currentPassword',
+  'newPassword',
   'token',
   'secret',
   'apiKey',
   'accessToken',
   'refreshToken',
-  'sessionId'
+  'sessionId',
+  'verificationId',
+  // Nested in error responses
+  'error.response._data.secret',
+  'error.response._data.token',
+  'error.response._data.password',
+  'error.data.secret',
+  'error.data.token',
+  'error.data.password',
+  // Nested in result objects
+  'result.secret',
+  'result.secretQrCode',
+  'result.token',
+  'data.secret',
+  'data.token',
+  'data.password',
+  // Wildcards for arrays and nested objects
+  '*.secret',
+  '*.token',
+  '*.password',
+  '*.accessToken',
+  '*.refreshToken',
+  'body.password',
+  'body.currentPassword',
+  'body.secret'
 ]
 
 /**
@@ -100,6 +129,9 @@ export function createLogger(context: string): Logger {
 /**
  * Helper to log errors with consistent format
  *
+ * In production, only logs error name, message, and safe metadata.
+ * In development, logs full error details including stack trace.
+ *
  * @param logger - The logger instance to use
  * @param error - The error to log
  * @param message - Additional context message
@@ -111,18 +143,43 @@ export function logError(
   message: string,
   data?: Record<string, unknown>
 ): void {
-  const errorData = {
-    ...data,
-    error: error instanceof Error
+  // In production, only log safe error information
+  // This prevents accidental logging of sensitive data in error responses
+  if (isDev) {
+    // Development: log full error details for debugging
+    const errorData = {
+      ...data,
+      error: error instanceof Error
+        ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+          }
+        : error
+    }
+    logger.error(errorData, message)
+  } else {
+    // Production: log only safe error information
+    const safeErrorInfo = error instanceof Error
       ? {
           name: error.name,
-          message: error.message,
-          stack: error.stack
+          // Truncate message to prevent potential sensitive data leakage
+          message: error.message.substring(0, 200)
         }
-      : error
-  }
+      : { type: typeof error }
 
-  logger.error(errorData, message)
+    const safeData = data ? { ...data } : {}
+
+    // Remove any potentially sensitive fields from data
+    const sensitiveFields = ['secret', 'token', 'password', 'apiKey', 'accessToken', 'refreshToken']
+    for (const field of sensitiveFields) {
+      if (field in safeData) {
+        safeData[field] = '[REDACTED]'
+      }
+    }
+
+    logger.error({ ...safeData, error: safeErrorInfo }, message)
+  }
 }
 
 /**
