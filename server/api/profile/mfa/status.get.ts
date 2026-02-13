@@ -1,75 +1,28 @@
-import { createLogger, logError } from '../../../utils/logger'
-
-const logger = createLogger('mfa-status')
-
-interface LogtoMfaFactor {
-  id: string
-  type: 'Totp' | 'BackupCode' | 'WebAuthn'
-  createdAt?: number
-}
-
-interface LogtoErrorResponse {
-  response?: {
-    status?: number
-    _data?: {
-      code?: string
-      message?: string
-    }
-  }
-  message?: string
-}
+import type { LogtoMfaFactor } from '../../../types/logto'
+import { logtoProxy } from '../../../utils/logto-proxy'
 
 export default defineEventHandler(async (event) => {
-  // Get the Logto client from context (injected by @logto/nuxt)
-  const client = event.context.logtoClient as { getAccessToken: () => Promise<string> } | undefined
+  // Use my-account API to get MFA verifications
+  // This endpoint works with the user's access token and doesn't require M2M credentials
+  const response = await logtoProxy<LogtoMfaFactor[] | { data: LogtoMfaFactor[] }>(
+    event,
+    '/mfa-verifications',
+    { method: 'GET' }
+  )
 
-  if (!client) {
-    throw createError({
-      statusCode: 401,
-      message: 'Unauthorized: Logto client not available'
-    })
+  // Handle both response formats: direct array or { data: array }
+  let mfaFactors: LogtoMfaFactor[] = []
+  if (Array.isArray(response)) {
+    mfaFactors = response
+  } else if (response && typeof response === 'object' && 'data' in response && Array.isArray(response.data)) {
+    mfaFactors = response.data
   }
 
-  const logtoEndpoint = process.env.NUXT_LOGTO_ENDPOINT || 'http://localhost:3001'
+  // Check if user has TOTP enabled
+  const hasTotp = mfaFactors.some(mfa => mfa.type === 'Totp')
 
-  try {
-    // Get the user's access token
-    const accessToken = await client.getAccessToken()
-
-    // Use my-account API to get MFA verifications
-    // This endpoint works with the user's access token and doesn't require M2M credentials
-    const response = await $fetch(`${logtoEndpoint}/api/my-account/mfa-verifications`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
-
-    // Handle both response formats: direct array or { data: array }
-    let mfaFactors: LogtoMfaFactor[] = []
-    if (Array.isArray(response)) {
-      mfaFactors = response
-    } else if (response && typeof response === 'object' && 'data' in response && Array.isArray((response as { data: unknown }).data)) {
-      mfaFactors = (response as { data: LogtoMfaFactor[] }).data
-    }
-
-    // Check if user has TOTP enabled
-    const hasTotp = mfaFactors.some(mfa => mfa.type === 'Totp')
-
-    return {
-      enabled: hasTotp,
-      factors: mfaFactors.map(mfa => mfa.type)
-    }
-  } catch (e: unknown) {
-    const error = e as LogtoErrorResponse
-    logError(logger, error, 'Failed to fetch MFA status', {
-      status: error.response?.status
-    })
-    throw createError({
-      statusCode: error.response?.status || 500,
-      message: error.response?._data?.message || 'Failed to fetch MFA status',
-      data: error.response?._data
-    })
+  return {
+    enabled: hasTotp,
+    factors: mfaFactors.map(mfa => mfa.type)
   }
 })

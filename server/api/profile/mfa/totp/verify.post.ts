@@ -1,6 +1,14 @@
-import type { H3Event } from 'h3'
 import { TOTP, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib'
-import { createLogger, logError } from '../../../../utils/logger'
+import { createLogger } from '../../../../utils/logger'
+import {
+  logtoProxy,
+  getVerificationIdByPassword,
+  getLogtoClient,
+  getLogtoEndpoint,
+  createApiError,
+  getErrorStatus,
+  getErrorCode
+} from '../../../../utils/logto-proxy'
 
 const logger = createLogger('totp-verify')
 
@@ -8,79 +16,17 @@ interface TotpVerifyBody {
   code: string
   secret: string
   verificationId?: string
-}
-
-interface LogtoErrorResponse {
-  response?: {
-    status?: number
-    _data?: {
-      code?: string
-      message?: string
-    }
-  }
-  message?: string
-}
-
-/**
- * Get a verification record ID by verifying the user's password.
- * This is required for sensitive operations like binding MFA.
- */
-const getVerificationIdByPassword = async (event: H3Event, password: string): Promise<string> => {
-  const client = event.context.logtoClient as { getAccessToken: () => Promise<string> } | undefined
-  if (!client) {
-    throw createError({
-      statusCode: 401,
-      message: 'Unauthorized: Logto client not available'
-    })
-  }
-
-  const accessToken = await client.getAccessToken()
-  const logtoEndpoint = process.env.NUXT_LOGTO_ENDPOINT || 'http://localhost:3001'
-
-  try {
-    const result = await $fetch(`${logtoEndpoint}/api/verifications/password`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: { password }
-    })
-
-    // Logto returns the verification record ID as 'verificationRecordId'
-    const typedResult = result as Record<string, unknown>
-    const verificationId = typedResult.verificationRecordId as string | undefined
-
-    if (!verificationId) {
-      logger.error({ keys: Object.keys(typedResult) }, 'No verificationId found in response')
-      throw createError({
-        statusCode: 500,
-        message: 'Password verification succeeded but no verification ID returned',
-        data: { code: 'verification_id_missing' }
-      })
-    }
-
-    return verificationId
-  } catch (e: unknown) {
-    const error = e as LogtoErrorResponse
-    logError(logger, error, 'Password verification failed', {
-      status: error.response?.status
-    })
-    throw createError({
-      statusCode: error.response?.status || 500,
-      message: error.response?._data?.message || 'Password verification failed',
-      data: error.response?._data
-    })
-  }
+  password?: string
 }
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody<TotpVerifyBody & { password?: string }>(event)
+  const body = await readBody<TotpVerifyBody>(event)
   const { code, secret, verificationId, password } = body
 
   if (!code) {
-    throw createError({
-      statusCode: 400,
+    throw createApiError(400, {
+      errorType: 'validation',
+      code: 'missing_code',
       message: 'Missing verification code'
     })
   }
@@ -97,16 +43,9 @@ export default defineEventHandler(async (event) => {
   // This requires the 'identity' scope which is requested in nuxt.config.ts
   if (effectiveVerificationId && secret) {
     try {
-      const client = event.context.logtoClient as { getAccessToken: () => Promise<string> } | undefined
-      if (!client) {
-        throw createError({
-          statusCode: 401,
-          message: 'Unauthorized: Logto client not available'
-        })
-      }
-
+      const client = getLogtoClient(event)
       const accessToken = await client.getAccessToken()
-      const logtoEndpoint = process.env.NUXT_LOGTO_ENDPOINT || 'http://localhost:3001'
+      const logtoEndpoint = getLogtoEndpoint()
 
       // Bind TOTP using my-account API with verification header
       const result = await $fetch(`${logtoEndpoint}/api/my-account/mfa-verifications`, {
@@ -121,16 +60,18 @@ export default defineEventHandler(async (event) => {
 
       logger.info('TOTP bound successfully via my-account API')
       return result
-    } catch (e: unknown) {
-      const error = e as LogtoErrorResponse
-      logError(logger, error, 'Bind endpoint failed', {
-        status: error.response?.status,
-        code: error.response?._data?.code
-      })
+    } catch (error: unknown) {
+      const errorStatus = getErrorStatus(error)
+      const errorCode = getErrorCode(error)
+
+      logger.error({
+        status: errorStatus,
+        code: errorCode
+      }, 'Bind endpoint failed')
 
       // If 401, fallback to local TOTP verification
       // This happens when the access token doesn't have 'identity' scope
-      if (error.response?.status === 401) {
+      if (errorStatus === 401) {
         logger.warn('Falling back to local TOTP verification (identity scope may be missing)')
 
         // Verify the TOTP code locally using otplib with crypto plugins
@@ -171,25 +112,25 @@ export default defineEventHandler(async (event) => {
           }
         }
 
-        throw createError({
-          statusCode: 400,
-          message: 'Invalid TOTP code. Please try again.',
-          data: { code: 'invalid_totp_code' }
+        throw createApiError(400, {
+          errorType: 'mfa',
+          code: 'invalid_totp_code',
+          message: 'Invalid TOTP code. Please try again.'
         })
       }
 
-      throw createError({
-        statusCode: error.response?.status || 500,
-        message: error.response?._data?.message || 'Failed to bind TOTP',
-        data: error.response?._data
+      throw createApiError(errorStatus, {
+        errorType: 'mfa',
+        code: errorCode || 'bind_failed',
+        message: 'Failed to bind TOTP'
       })
     }
   }
 
   // No verificationId and no password - we need one or the other
-  throw createError({
-    statusCode: 400,
-    message: 'verificationId or password is required to complete TOTP setup',
-    data: { code: 'verification_required' }
+  throw createApiError(400, {
+    errorType: 'validation',
+    code: 'verification_required',
+    message: 'verificationId or password is required to complete TOTP setup'
   })
 })
