@@ -71,15 +71,8 @@ const copyToken = async () => {
         copyButtonText.value = t('jwt.copy')
       }, 2000)
     } catch (error) {
-      clientLogger.warn('jwt', 'Failed to copy token to clipboard, using fallback')
-      // Fallback para navegadores que no soporten la API
-      const textArea = document.createElement('textarea')
-      textArea.value = jwtToken.value
-      document.body.appendChild(textArea)
-      textArea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textArea)
-      copyButtonText.value = t('jwt.copied')
+      clientLogger.error('jwt', 'Failed to copy token to clipboard', error)
+      copyButtonText.value = t('jwt.copyFailed')
       setTimeout(() => {
         copyButtonText.value = t('jwt.copy')
       }, 2000)

@@ -54,6 +54,7 @@
     "noToken": "No JWT token available",
     "copy": "Copy",
     "copied": "Copied!",
+    "copyFailed": "Copy failed",
     "sessionInfo": "JWT Token",
     "userInfo": "User Info"
   },

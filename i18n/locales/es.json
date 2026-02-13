@@ -54,6 +54,7 @@
     "noToken": "No hay token JWT disponible",
     "copy": "Copiar",
     "copied": "¡Copiado!",
+    "copyFailed": "Error al copiar",
     "sessionInfo": "Token JWT",
     "userInfo": "Información del Usuario"
   },
