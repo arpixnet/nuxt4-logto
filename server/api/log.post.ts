@@ -8,7 +8,7 @@
  */
 
 import { logClientEvent, sessionLogger } from '../utils/logger'
-import { checkRateLimit, getClientIP } from '../utils/rate-limiter'
+import { checkRateLimit } from '../utils/rate-limiter'
 import type { H3Event } from 'h3'
 
 interface ClientLogBody {
