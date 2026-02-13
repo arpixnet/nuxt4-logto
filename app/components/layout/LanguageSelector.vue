@@ -15,7 +15,8 @@ const availableLocales = computed(() => {
     code: lang.code,
     name: lang.name,
     flag: lang.flag,
-    shortName: lang.code === 'es' ? 'ES' : 'EN'
+    // Use shortName from i18n config, fallback to uppercase code
+    shortName: lang.shortName || lang.code.toUpperCase()
   })) as LanguageInfo[]
 })
 

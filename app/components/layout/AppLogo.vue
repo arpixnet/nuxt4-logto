@@ -16,10 +16,7 @@ const { config: authPageConfig } = useAuthConfig()
     >
     <h2
       v-else
-      :class="[
-        'font-bold tracking-tight text-gray-900 dark:text-white',
-        `text-${authPageConfig.logo.size}`
-      ]"
+      class="font-bold tracking-tight text-gray-900 dark:text-white text-xl"
     >
       {{ authPageConfig.appName }}
     </h2>
