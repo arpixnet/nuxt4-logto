@@ -1,8 +1,5 @@
 import type { LogtoTotpSecretResponse, LogtoUser } from '../../../types/logto'
-import { createLogger } from '../../../utils/logger'
 import { logtoProxy, buildOtpAuthUri } from '../../../utils/logto-proxy'
-
-const logger = createLogger('mfa-totp')
 
 export default defineEventHandler(async (event) => {
   // Get user info from session to build otpauth URI if needed
