@@ -36,62 +36,20 @@
     }
   },
   "common": {
-    "appName": "Arpix Solutions",
     "changeLanguage": "Cambiar Idioma",
-    "changeTheme": "Cambiar Tema",
-    "theme": {
-      "light": "Claro",
-      "dark": "Oscuro",
-      "system": "Sistema"
-    },
     "user": "Usuario",
     "logout": {
-      "button": "Cerrar Sesión",
-      "loggingOut": "Cerrando sesión...",
-      "error": "Fallo al cerrar sesión. Por favor intenta nuevamente."
+      "button": "Cerrar Sesión"
     },
-    "password": {
-      "placeholder": "Ingresa tu contraseña",
-      "showPassword": "Mostrar contraseña",
-      "hidePassword": "Ocultar contraseña",
-      "hint": "Debe tener al menos 8 caracteres"
-    },
-    "footer": {
-      "encryption": "Sus datos están protegidos con encriptación de grado industrial",
-      "copyright": "Todos los derechos reservados"
-    },
-    "home": "Inicio",
-    "dashboard": "Panel de Control",
     "profile": "Perfil",
-    "login": "Acceder",
-    "register": "Registrarse"
+    "login": "Acceder"
   },
   "header": {
-    "title": "Arpix Solutions",
-    "profile": "Ir al Perfil",
     "goToProfile": "Ir al Perfil",
     "logo": "Logo"
   },
-  "footer": {
-    "product": "Producto",
-    "company": "Compañía",
-    "resources": "Recursos",
-    "features": "Características",
-    "pricing": "Precios",
-    "api": "API",
-    "about": "Nosotros",
-    "blog": "Blog",
-    "careers": "Empleos",
-    "docs": "Documentación",
-    "support": "Soporte",
-    "status": "Estado",
-    "terms": "Términos de Servicio",
-    "privacy": "Política de Privacidad"
-  },
   "jwt": {
     "title": "Token JWT",
-    "showToken": "Mostrar Token",
-    "hideToken": "Ocultar Token",
     "loading": "Cargando...",
     "noToken": "No hay token JWT disponible",
     "copy": "Copiar",
@@ -100,175 +58,18 @@
     "userInfo": "Información del Usuario"
   },
   "validation": {
-    "emailRequired": "El correo es requerido",
     "emailInvalid": "Por favor ingrese un correo válido",
-    "passwordRequired": "La contraseña es requerida",
     "passwordMinLength": "La contraseña debe tener al menos 8 caracteres",
     "nameRequired": "El nombre es requerido",
     "currentPasswordRequired": "La contraseña actual es requerida"
   },
-  "auth": {
-    "login": {
-      "title": "Bienvenido de Nuevo",
-      "subtitle": "Inicia sesión para continuar",
-      "email": "Correo",
-      "emailPlaceholder": "Ingresa tu correo",
-      "password": "Contraseña",
-      "passwordPlaceholder": "Ingresa tu contraseña",
-      "forgotPassword": "¿Olvidaste tu contraseña?",
-      "signIn": "Iniciar Sesión",
-      "signingIn": "Iniciando sesión...",
-      "success": "¡Sesión iniciada! Redirigiendo...",
-      "noAccount": "¿No tienes una cuenta?",
-      "createAccount": "Crear una cuenta",
-      "errorInvalid": "Correo o contraseña inválidos",
-      "errorNetwork": "Error de red. Por favor verifica tu conexión",
-      "errorGeneric": "Ocurrió un error. Por favor intenta nuevamente",
-      "errorInvalidCode": "Código de verificación inválido",
-      "sessionExpired": "Tu sesión ha expirado",
-      "sessionExpiredMessage": "Por favor inicia sesión nuevamente para continuar",
-      "twoFactor": {
-        "title": "Autenticación de Dos Factores",
-        "description": "Ingresa el código de 6 dígitos de tu aplicación autenticadora",
-        "otpPlaceholder": "•",
-        "verify": "Verificar Código",
-        "backToLogin": "Volver al Inicio"
-      },
-      "panelTitle": "Bienvenido a Nuestra Plataforma",
-      "panelSubtitle": "Experimenta el poder de la autenticación moderna"
-    },
-    "register": {
-      "title": "Crear Tu Cuenta",
-      "subtitle": "Comienza hoy con una cuenta gratuita",
-      "email": "Correo",
-      "password": "Contraseña",
-      "createAccount": "Crear Cuenta",
-      "creatingAccount": "Creando cuenta...",
-      "hasAccount": "¿Ya tienes una cuenta?",
-      "signIn": "Iniciar Sesión",
-      "errorEmailExists": "Ya existe una cuenta con este correo",
-      "errorPassword": "La contraseña no cumple los requisitos",
-      "errorNetwork": "Error de red. Por favor verifica tu conexión",
-      "errorGeneric": "Ocurrió un error. Por favor intenta nuevamente",
-      "panelTitle": "Únete a Nuestra Comunidad",
-      "panelSubtitle": "Crea una cuenta e inicia tu viaje"
-    },
-    "forgotPassword": {
-      "title": "¿Olvidaste Tu Contraseña?",
-      "subtitle": "Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.",
-      "email": "Correo electrónico",
-      "emailPlaceholder": "Ingresa tu correo electrónico",
-      "sendResetLink": "Enviar Enlace de Restablecimiento",
-      "sending": "Enviando...",
-      "backToLogin": "← Volver al Inicio",
-      "errorInvalidEmail": "Por favor ingresa un correo válido",
-      "success": "Si existe una cuenta con este correo, le hemos enviado un enlace para restablecer la contraseña.",
-      "errorGeneric": "Ocurrió un error. Por favor intenta nuevamente.",
-      "rateLimit": "Demasiadas solicitudes. Por favor intenta nuevamente en {resetIn} minuto",
-      "rateLimit_plural": "Demasiadas solicitudes. Por favor intenta nuevamente en {resetIn} minutos",
-      "footer": "Restablecimiento seguro de contraseña powered by {appName}",
-      "panelTitle": "Restablece Tu Contraseña",
-      "panelSubtitle": "Te ayudaremos a volver a tu cuenta"
-    },
-    "checkResetEmail": {
-      "title": "Revisa Tu Correo",
-      "subtitle": "Te hemos enviado un enlace de restablecimiento de contraseña a",
-      "spamWarning": "Si no recibes el correo en unos minutos, revisa tu carpeta de spam.",
-      "whatsNext": "¿Qué Sigue?",
-      "step1": "Haz clic en el enlace del correo para restablecer tu contraseña",
-      "step2": "El enlace expira en 1 hora por seguridad",
-      "step3": "Mantén tu nueva contraseña segura",
-      "backToLogin": "← Volver al Inicio",
-      "requestAnother": "Solicitar otro enlace de restablecimiento",
-      "footer": "Restablecimiento seguro de contraseña powered by {appName}",
-      "panelTitle": "Revisa Tu Bandeja de Entrada",
-      "panelSubtitle": "Tu enlace de restablecimiento está en camino"
-    },
-    "resetPassword": {
-      "title": "Restablecer Tu Contraseña",
-      "subtitle": "Ingresa tu nueva contraseña abajo",
-      "newPassword": "Nueva contraseña",
-      "newPasswordPlaceholder": "Ingresa nueva contraseña",
-      "confirmPassword": "Confirmar nueva contraseña",
-      "confirmPasswordPlaceholder": "Confirmar nueva contraseña",
-      "resetPassword": "Restablecer Contraseña",
-      "resetting": "Restableciendo...",
-      "backToLogin": "← Volver al Inicio",
-      "passwordsDoNotMatch": "Las contraseñas no coinciden",
-      "errorInvalidToken": "Token de restablecimiento inválido o expirado. Por favor solicita un nuevo restablecimiento de contraseña.",
-      "success": "¡Contraseña restablecida exitosamente! Redirigiendo al inicio...",
-      "errorGeneric": "Ocurrió un error. Por favor intenta nuevamente.",
-      "footer": "Restablecimiento seguro de contraseña powered by {appName}",
-      "panelTitle": "Establecer Nueva Contraseña",
-      "panelSubtitle": "Crea una contraseña fuerte y segura"
-    },
-    "checkEmail": {
-      "title": "Revisa Tu Correo",
-      "subtitle": "Te hemos enviado un correo de verificación a:",
-      "whatsNext": "¿Qué sigue?",
-      "step1": "Revisa tu bandeja de entrada (y carpeta de spam)",
-      "step2": "Haz clic en el enlace de verificación en el correo",
-      "step3": "Vuelve para iniciar sesión",
-      "resendVerificationEmail": "Reenviar Correo de Verificación",
-      "sending": "Enviando...",
-      "alreadyVerified": "¿Ya verificado?",
-      "signIn": "Inicia sesión en tu cuenta",
-      "success": "¡Correo de verificación enviado! Por favor revisa tu bandeja de entrada.",
-      "errorGeneric": "Ocurrió un error. Por favor intenta nuevamente.",
-      "rateLimit": "Demasiadas solicitudes. Por favor intenta nuevamente más tarde. ({remaining} restantes)",
-      "footer": "Verificación de correo powered by {appName}",
-      "panelTitle": "Revisa Tu Bandeja de Entrada",
-      "panelSubtitle": "Tu enlace de verificación está en camino"
-    },
-    "verifyEmailPending": {
-      "title": "Verificación de Correo Requerida",
-      "subtitle": "Por favor verifica tu correo electrónico para continuar",
-      "checkYourEmail": "📧 Revisa tu correo",
-      "instructions": "Hemos enviado un enlace de verificación a tu correo. Haz clic en el enlace para verificar tu cuenta e iniciar sesión.",
-      "resendVerificationEmail": "Reenviar Correo de Verificación",
-      "sending": "Enviando...",
-      "backToLogin": "← Volver al Inicio de Sesión",
-      "success": "¡Correo de verificación enviado! Por favor revisa tu bandeja de entrada.",
-      "errorGeneric": "Error al reenviar el correo de verificación. Por favor intenta nuevamente.",
-      "rateLimit": "Demasiadas solicitudes. Por favor intenta más tarde. ({remaining} restantes)",
-      "panelTitle": "Verifica tu Correo",
-      "panelSubtitle": "¡Casi listo! Solo un paso más"
-    },
-    "social": {
-      "orContinueWith": "O continúa con",
-      "continueWith": "Continuar con {provider}",
-      "signingIn": "Iniciando sesión con {provider}...",
-      "signingUp": "Registrándose con {provider}...",
-      "error": "Error al iniciar sesión con {provider}. Por favor intenta nuevamente."
-    }
-  },
-  "verifyEmail": {
-    "loading": "Verificando tu correo...",
-    "success": {
-      "title": "¡Correo Verificado!",
-      "message": "Tu correo ha sido verificado exitosamente. Redirigiendo al inicio...",
-      "goToLogin": "Ir al Inicio"
-    },
-    "error": {
-      "title": "Verificación Fallida",
-      "invalidToken": "Enlace de verificación inválido o expirado. Por favor solicita un nuevo correo de verificación.",
-      "resend": "Reenviar Correo de Verificación",
-      "backToLogin": "Volver al Inicio"
-    }
-  },
   "profile": {
     "title": "Configuración del Perfil",
     "subtitle": "Administra la configuración y preferencias de tu cuenta",
-    "loading": "Cargando perfil...",
     "profileInfo": "Información del Perfil",
-    "editProfile": "Editar Perfil",
     "username": "Nombre de Usuario",
     "email": "Correo",
-    "emailVerified": "Correo Verificado",
-    "verified": "Verificado",
-    "notVerified": "No Verificado",
     "notSet": "No establecido",
-    "memberSince": "Miembro Desde",
     "saveChanges": "Guardar Cambios",
     "cancel": "Cancelar",
     "emailNotChangeable": "El correo no puede ser cambiado actualmente",
@@ -278,7 +79,6 @@
     "passwordDescription": "Mantén tu cuenta segura usando una contraseña fuerte.",
     "currentPassword": "Contraseña Actual",
     "newPassword": "Nueva Contraseña",
-    "confirmPassword": "Confirmar Nueva Contraseña",
     "updatePassword": "Actualizar Contraseña",
     "passwordStrength": {
       "enter": "Ingresa una contraseña",
@@ -293,7 +93,6 @@
       "met": "Requisito cumplido",
       "notMet": "Requisito no cumplido"
     },
-    "security": "Seguridad",
     "twoFactorAuth": "Autenticación de Dos Factores",
     "twoFactorDescription": "Añade una capa extra de seguridad a tu cuenta",
     "2FASecured": "Tu cuenta está protegida con 2FA.",
@@ -301,98 +100,46 @@
     "enable": "Activar 2FA",
     "disable": "Desactivar 2FA",
     "enabled": "Activado",
-    "activeSessions": "Sesiones Activas",
-    "sessionsDescription": "Administra dispositivos donde estás iniciado sesión",
-    "viewSessions": "Ver Sesiones",
+    "notVerified": "No Verificado",
     "dangerZone": {
       "title": "Zona de Peligro",
       "description": "Acciones irreversibles y destructivas",
       "deleteAccountDesc": "Una vez que elimines tu cuenta, no hay vuelta atrás. Por favor, esté seguro.",
       "deleteAccount": "Eliminar Cuenta"
     },
-    "deleteAccount": "Eliminar Cuenta",
-    "deleteDescription": "Eliminar permanentemente tu cuenta y todos los datos",
-    "deleteAccountButton": "Eliminar Cuenta",
-    "backToDashboard": "Volver al Dashboard",
     "modals": {
       "twoFactor": {
-        "confirmPasswordTitle": "Configurar Autenticación de Dos Factores",
-        "confirmPasswordDesc": "Por favor confirma tu contraseña para configurar la autenticación de dos factores.",
         "scanQrTitle": "Escanear Código QR",
         "scanQrDesc": "Escanear el código QR con tu aplicación autenticadora.",
         "manualEntry": "O ingresa este código manualmente:",
-        "confirmPassword": "Contraseña Actual",
         "enterCode": "Ingresa el código de 6 dígitos de tu aplicación para verificar.",
-        "continue": "Continuar",
         "verifyAndActivate": "Verificar y Activar",
         "passwordRequired": "Contraseña Requerida",
         "passwordDesc": "Para completar la configuración 2FA, por favor ingresa tu contraseña actual para verificar tu identidad."
       },
       "disableTwoFactor": {
         "title": "Desactivar Autenticación de Dos Factores",
-        "description": "Por favor confirma tu contraseña para desactivar la autenticación de dos factores.",
-        "confirmPassword": "Contraseña Actual",
-        "disable2FA": "Desactivar 2FA"
-      },
-      "sessions": {
-        "title": "Sesiones Activas",
-        "description": "Administra dispositivos donde estás actualmente iniciado sesión.",
-        "revokeAll": "Revocar Todas las Otras Sesiones",
-        "noSessions": "No se encontraron sesiones activas.",
-        "current": "Actual",
-        "close": "Cerrar",
-        "revokeAllConfirm": "Revocar Todas las Otras Sesiones",
-        "revokeAllConfirmDesc": "¿Estás seguro de que quieres cerrar sesión de todos los otros dispositivos?"
+        "description": "Por favor confirma tu contraseña para desactivar la autenticación de dos factores."
       },
       "deleteAccount": {
         "title": "Eliminar Cuenta",
         "description": "Esta acción no se puede deshacer. Todos tus datos serán eliminados permanentemente.",
         "warning": "Esta acción es irreversible. Todos tus datos se perderán permanentemente.",
-        "danger": "PELIGRO: Esta acción es irreversible",
-        "dangerDesc": "Perderás acceso a tu cuenta y todos los datos asociados para siempre.",
-        "confirmPassword": "Confirmar con Contraseña",
-        "enterPassword": "Ingresa tu contraseña para confirmar",
-        "cancel": "Cancelar",
-        "confirm": "Eliminar Mi Cuenta",
-        "delete": "Eliminar Cuenta"
+        "confirm": "Eliminar Mi Cuenta"
       }
-    },
-    "deviceNames": {
-      "unknown": "Dispositivo Desconocido",
-      "macOS": "Mac OS",
-      "windows": "Windows",
-      "android": "Android",
-      "iphone": "iPhone",
-      "linux": "Linux",
-      "device": "Dispositivo"
-    },
-    "validation": {
-      "passwordMatch": "Las contraseñas coinciden",
-      "passwordNotMatch": "Las contraseñas no coinciden"
     },
     "toasts": {
       "profileUpdated": "Perfil actualizado exitosamente",
       "passwordChanged": "Contraseña cambiada exitosamente",
       "twoFactorEnabled": "¡Autenticación de dos factores activada exitosamente!",
       "twoFactorDisabled": "Autenticación de dos factores desactivada",
-      "sessionRevoked": "Sesión revocada exitosamente",
-      "allSessionsRevoked": "Todas las otras sesiones revocadas",
-      "accountDeleted": "Tu cuenta ha sido eliminada exitosamente. Adiós.",
-      "error": "Error",
-      "success": "Éxito"
+      "accountDeleted": "Tu cuenta ha sido eliminada exitosamente. Adiós."
     },
     "errors": {
       "updateProfile": "Fallo al actualizar perfil",
       "changePassword": "Fallo al cambiar contraseña",
-      "incorrectPassword": "Contraseña incorrecta",
       "incorrectCurrentPassword": "La contraseña actual que ingresaste es incorrecta.",
-      "invalidCode": "Código inválido",
       "verificationFailed": "Verificación fallida",
-      "disable2FA": "Fallo al desactivar 2FA",
-      "loadSessions": "Fallo al cargar sesiones",
-      "revokeSession": "Fallo al revocar sesión",
-      "revokeAllSessions": "Fallo al revocar sesiones",
-      "deleteAccount": "Fallo al eliminar cuenta",
       "serverError": "Ocurrió un error en el servidor. Por favor intenta más tarde.",
       "logto": {
         "password__rejected": "La contraseña no cumple con los requisitos.",
