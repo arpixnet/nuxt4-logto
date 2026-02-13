@@ -16,7 +16,7 @@
 
 import { logtoEventHandler } from '#logto'
 import { authLogger, middlewareLogger, logError } from '../utils/logger'
-import { checkRateLimit, throwRateLimitError } from '../utils/rate-limiter'
+import { checkRateLimit, throwRateLimitError, getClientIP } from '../utils/rate-limiter'
 import type { H3Event } from 'h3'
 
 export default defineEventHandler(async (event) => {
@@ -70,9 +70,11 @@ function addSecurityHeaders(event: H3Event): void {
  */
 async function applyRateLimiting(event: H3Event): Promise<void> {
   try {
-    const result = await checkRateLimit(event, {
-      maxRequests: 100,
-      windowSeconds: 900 // 15 minutes
+    const ip = getClientIP(event)
+    const result = await checkRateLimit({
+      key: `api:${ip}`,
+      points: 100,
+      duration: 900 // 15 minutes
     })
 
     // Add rate limit headers to response

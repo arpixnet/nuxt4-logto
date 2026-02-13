@@ -56,18 +56,6 @@ const getM2MToken = async (): Promise<string> => {
 }
 
 export default defineEventHandler(async (event) => {
-  // Rate limiting: 3 account deletion attempts per hour per IP
-  // This is a sensitive operation, so we limit it more strictly
-  const rateLimitResult = await checkRateLimit(event, {
-    maxRequests: 3,
-    windowSeconds: 3600 // 1 hour
-  })
-
-  if (!rateLimitResult.allowed) {
-    logger.warn('Account deletion rate limit exceeded')
-    throwRateLimitError(rateLimitResult)
-  }
-
   // Get user ID from logtoUser context (injected by @logto/nuxt)
   const logtoUser = event.context.logtoUser as LogtoUser | undefined
   const userId = logtoUser?.sub
@@ -90,6 +78,18 @@ export default defineEventHandler(async (event) => {
       code: 'password_required',
       message: 'Password is required to delete account'
     })
+  }
+
+  // Rate limiting: Per-user rate limit (3 attempts per hour per user)
+  const rateLimitResult = await checkRateLimit({
+    key: `account-delete:${userId}`,
+    points: 3,
+    duration: 3600 // 1 hour
+  })
+
+  if (!rateLimitResult.allowed) {
+    logger.warn('Account deletion rate limit exceeded')
+    throwRateLimitError(rateLimitResult)
   }
 
   try {

@@ -1,392 +1,251 @@
 /**
- * Redis-Based Rate Limiter with In-Memory Fallback
+ * Rate Limiter Utility using rate-limiter-flexible
  *
- * Production-ready rate limiting solution:
- * - Primary: Redis for distributed systems
- * - Fallback: In-memory for development or when Redis is unavailable
- * - Supports Redis with or without password
+ * Provides rate limiting functionality for server API endpoints using Redis.
  *
- * Environment Variables:
- * - REDIS_HOST: Redis server host (default: localhost)
- * - REDIS_PORT: Redis server port (default: 6379)
- * - REDIS_PASSWORD: Optional Redis password
+ * IMPORTANT: For user-specific operations (account deletion, password change),
+ * always provide the userId in the identifier to rate limit per-user, not per-IP.
+ *
+ * Example:
+ * ```typescript
+ * const rateLimitResult = await checkRateLimit({
+ *   key: `account-delete:${userId}`,
+ *   points: 3,
+ *   duration: 3600 // 1 hour
+ * })
+ * ```
  */
 
-import Redis, { type RedisOptions } from 'ioredis'
+import Redis from 'ioredis'
+import { RateLimiterRedis, RateLimiterMemory } from 'rate-limiter-flexible'
 import { rateLimitLogger, logError } from './logger'
 import type { H3Event } from 'h3'
 
-interface RateLimitEntry {
-  count: number
+export interface RateLimitConfig {
+  /** Unique key for rate limiting (e.g., 'account-delete:userId123') */
+  key: string
+  /** Maximum number of requests allowed */
+  points: number
+  /** Duration in seconds */
+  duration: number
+}
+
+export interface RateLimitResult {
+  allowed: boolean
+  remaining: number
   resetAt: number
+  limit: number
+  msBeforeNext: number
 }
 
 // Redis client (singleton)
 let redisClient: Redis | null = null
 let useRedis = false
-let reconnectionInterval: NodeJS.Timeout | null = null
 
-// In-memory fallback store
-const rateLimitStore = new Map<string, RateLimitEntry>()
-
-/**
- * Attempt to reconnect to Redis
- * Called periodically when Redis is unavailable
- */
-async function attemptReconnect(): Promise<void> {
-  if (useRedis || !redisClient) return
-
-  try {
-    await redisClient.ping()
-    rateLimitLogger.info('Redis reconnection successful')
-    useRedis = true
-  } catch {
-    // Ignore errors, will retry on next interval
-    rateLimitLogger.debug('Redis reconnection failed, will retry later')
-  }
-}
+// In-memory fallback for when Redis is unavailable
+const rateLimiterMemory = new RateLimiterMemory({
+  points: 100,
+  duration: 60
+})
 
 /**
- * Start periodic reconnection attempts
+ * Initialize Redis connection and rate limiter
  */
-function startReconnectionAttempts(): void {
-  if (reconnectionInterval) return
-
-  rateLimitLogger.info('Starting periodic Redis reconnection attempts')
-  reconnectionInterval = setInterval(attemptReconnect, 30000) // 30 seconds
-}
-
-/**
- * Stop periodic reconnection attempts
- */
-function stopReconnectionAttempts(): void {
-  if (reconnectionInterval) {
-    clearInterval(reconnectionInterval)
-    reconnectionInterval = null
-    rateLimitLogger.debug('Stopped periodic Redis reconnection attempts')
-  }
-}
-
-/**
- * Initialize Redis connection
- */
-function initializeRedis(): Redis | null {
+function initializeRedis(): void {
   if (redisClient !== null) {
-    return redisClient
+    return
   }
 
   try {
-    const redisConfig: RedisOptions = {
+    redisClient = new Redis({
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379', 10),
       maxRetriesPerRequest: 3,
+      enableOfflineQueue: false,
       retryStrategy: (times: number) => {
         if (times > 3) {
-          rateLimitLogger.warn('Redis connection failed after 3 retries, starting periodic reconnection')
+          rateLimitLogger.warn('Redis connection failed after 3 retries, using memory fallback')
           useRedis = false
-          startReconnectionAttempts()
-          return null // Stop retrying
+          return null
         }
-        return Math.min(times * 100, 2000) // Exponential backoff
+        return Math.min(times * 100, 2000)
       }
-    }
+    })
 
-    // Add password if provided
     if (process.env.REDIS_PASSWORD) {
-      redisConfig.password = process.env.REDIS_PASSWORD
+      redisClient.options.password = process.env.REDIS_PASSWORD
     }
-
-    redisClient = new Redis(redisConfig)
 
     redisClient.on('connect', () => {
       rateLimitLogger.info('Connected to Redis')
       useRedis = true
-      stopReconnectionAttempts()
     })
 
     redisClient.on('error', (err) => {
-      logError(rateLimitLogger, err, 'Redis error occurred')
+      logError(rateLimitLogger, err, 'Redis error')
       useRedis = false
     })
 
     redisClient.on('close', () => {
       rateLimitLogger.warn('Redis connection closed, using in-memory fallback')
       useRedis = false
-      startReconnectionAttempts()
     })
-
-    return redisClient
   } catch (error) {
     logError(rateLimitLogger, error, 'Failed to initialize Redis')
-    return null
   }
 }
 
-// Initialize Redis on module load
+// Initialize on module load
 initializeRedis()
-
-// Cleanup old entries from in-memory store every 5 minutes
-setInterval(() => {
-  if (!useRedis) {
-    const now = Date.now()
-    let cleanedCount = 0
-    for (const [key, entry] of rateLimitStore.entries()) {
-      if (entry.resetAt < now) {
-        rateLimitStore.delete(key)
-        cleanedCount++
-      }
-    }
-    if (cleanedCount > 0) {
-      rateLimitLogger.debug({ cleanedCount }, 'Cleaned up expired in-memory rate limit entries')
-    }
-  }
-}, 5 * 60 * 1000)
-
-export interface RateLimitConfig {
-  /**
-   * Maximum number of requests allowed in the time window
-   */
-  maxRequests: number
-
-  /**
-   * Time window in seconds
-   */
-  windowSeconds: number
-
-  /**
-   * Custom identifier (defaults to IP address)
-   */
-  identifier?: string
-}
-
-export interface RateLimitResult {
-  /**
-   * Whether the request is allowed
-   */
-  allowed: boolean
-
-  /**
-   * Number of requests remaining in the current window
-   */
-  remaining: number
-
-  /**
-   * Timestamp when the rate limit resets (in seconds)
-   */
-  resetAt: number
-
-  /**
-   * Total number of requests allowed in the window
-   */
-  limit: number
-}
-
-/**
- * Check rate limit using Redis
- */
-async function checkRateLimitRedis(
-  key: string,
-  config: RateLimitConfig
-): Promise<RateLimitResult> {
-  if (!redisClient) {
-    throw new Error('Redis client not initialized')
-  }
-
-  const now = Date.now()
-  const windowMs = config.windowSeconds * 1000
-  const redisKey = `ratelimit:${key}`
-
-  try {
-    // Get current count
-    const count = await redisClient.incr(redisKey)
-
-    // Set expiration on first request
-    if (count === 1) {
-      await redisClient.pexpire(redisKey, windowMs)
-    }
-
-    // Get TTL to calculate resetAt
-    const ttl = await redisClient.pttl(redisKey)
-
-    let resetAt: number
-    if (ttl > 0) {
-      // Key with valid TTL
-      resetAt = Math.floor((now + ttl) / 1000)
-    } else if (ttl === -1) {
-      // Key exists but without TTL (external manipulation or previous bug)
-      rateLimitLogger.warn({ key: redisKey }, 'Rate limit key without TTL detected, setting TTL')
-      await redisClient.pexpire(redisKey, windowMs)
-      resetAt = Math.floor((now + windowMs) / 1000)
-    } else {
-      // ttl === -2 (key doesn't exist) or other cases
-      resetAt = Math.floor((now + windowMs) / 1000)
-    }
-
-    const allowed = count <= config.maxRequests
-    const remaining = Math.max(0, config.maxRequests - count)
-
-    // Log when rate limit is approaching (80% used)
-    if (remaining === Math.ceil(config.maxRequests * 0.2)) {
-      rateLimitLogger.debug({
-        key,
-        count,
-        maxRequests: config.maxRequests,
-        remaining
-      }, 'Rate limit threshold approaching')
-    }
-
-    return {
-      allowed,
-      remaining,
-      resetAt,
-      limit: config.maxRequests
-    }
-  } catch (error) {
-    logError(rateLimitLogger, error, 'Redis operation failed', { key })
-    throw error
-  }
-}
-
-/**
- * Check rate limit using in-memory store (fallback)
- */
-function checkRateLimitMemory(
-  key: string,
-  config: RateLimitConfig
-): Promise<RateLimitResult> {
-  const now = Date.now()
-  const windowMs = config.windowSeconds * 1000
-
-  // Get or create entry
-  let entry = rateLimitStore.get(key)
-
-  // If entry doesn't exist or has expired, create new one
-  if (!entry || entry.resetAt < now) {
-    entry = {
-      count: 0,
-      resetAt: now + windowMs
-    }
-    rateLimitStore.set(key, entry)
-  }
-
-  // Increment count
-  entry.count++
-
-  // Check if limit exceeded
-  const allowed = entry.count <= config.maxRequests
-  const remaining = Math.max(0, config.maxRequests - entry.count)
-
-  return Promise.resolve({
-    allowed,
-    remaining,
-    resetAt: Math.floor(entry.resetAt / 1000),
-    limit: config.maxRequests
-  })
-}
 
 /**
  * Check if a request should be rate limited
  *
- * Automatically uses Redis if available, falls back to in-memory storage
- *
- * @param event - H3 event object
  * @param config - Rate limit configuration
- * @returns Rate limit result
- *
- * @example
- * ```typescript
- * const result = await checkRateLimit(event, {
- *   maxRequests: 3,
- *   windowSeconds: 3600, // 1 hour
- * })
- *
- * if (!result.allowed) {
- *   throw createError({
- *     statusCode: 429,
- *     message: 'Too many requests. Please try again later.'
- *   })
- * }
- * ```
+ * @param config.key - Unique identifier (e.g., 'account-delete:userId123')
+ * @param config.points - Maximum requests allowed
+ * @param config.duration - Time window in seconds
  */
-export async function checkRateLimit(
-  event: H3Event,
-  config: RateLimitConfig
-): Promise<RateLimitResult> {
-  // Get identifier (custom or IP address)
-  const identifier = config.identifier || getRequestIP(event) || 'unknown'
-  const key = identifier
+export async function checkRateLimit(config: RateLimitConfig): Promise<RateLimitResult> {
+  // Create a limiter with the specific config for this operation
+  try {
+    const operationLimiter = useRedis && redisClient
+      ? new RateLimiterRedis({
+          storeClient: redisClient,
+          keyPrefix: 'ratelimit',
+          points: config.points,
+          duration: config.duration,
+          insuranceLimiter: rateLimiterMemory
+        })
+      : new RateLimiterMemory({
+          points: config.points,
+          duration: config.duration
+        })
 
-  // Use Redis if available, otherwise fallback to in-memory
-  if (useRedis && redisClient) {
-    try {
-      return await checkRateLimitRedis(key, config)
-    } catch (error) {
-      rateLimitLogger.warn({ key, error }, 'Redis failed, falling back to in-memory')
-      useRedis = false
-      return await checkRateLimitMemory(key, config)
+    const result = await operationLimiter.consume(config.key)
+
+    return {
+      allowed: true,
+      remaining: result.remainingPoints,
+      resetAt: Math.floor((Date.now() + result.msBeforeNext) / 1000),
+      limit: config.points,
+      msBeforeNext: result.msBeforeNext
     }
-  } else {
-    return await checkRateLimitMemory(key, config)
+  } catch (rejRes: unknown) {
+    if (rejRes instanceof Error) {
+      // Redis error, fallback allowed
+      rateLimitLogger.warn({ key: config.key, error: rejRes }, 'Redis error, allowing request')
+      return {
+        allowed: true,
+        remaining: 0,
+        resetAt: Math.floor(Date.now() / 1000) + config.duration,
+        limit: config.points,
+        msBeforeNext: config.duration * 1000
+      }
+    }
+
+    // Rate limit exceeded - rejRes is RateLimiterRes object
+    const rateLimitRej = rejRes as { remainingPoints?: number, msBeforeNext: number }
+
+    rateLimitLogger.warn({
+      key: config.key,
+      limit: config.points,
+      remaining: rateLimitRej.remainingPoints || 0,
+      msBeforeNext: rateLimitRej.msBeforeNext
+    }, 'Rate limit exceeded')
+
+    return {
+      allowed: false,
+      remaining: rateLimitRej.remainingPoints || 0,
+      resetAt: Math.floor((Date.now() + rateLimitRej.msBeforeNext) / 1000),
+      limit: config.points,
+      msBeforeNext: rateLimitRej.msBeforeNext
+    }
   }
 }
 
 /**
- * Get request IP address from event
+ * Throw a rate limit error
  */
-function getRequestIP(event: H3Event): string | null {
-  // Try to get IP from various headers (for proxies/load balancers)
+export function throwRateLimitError(result: RateLimitResult): never {
+  const resetInMinutes = Math.ceil(result.msBeforeNext / 1000 / 60)
+
+  throw createError({
+    statusCode: 429,
+    statusMessage: 'Too Many Requests',
+    message: `Rate limit exceeded. Please try again in ${resetInMinutes} minute${resetInMinutes !== 1 ? 's' : ''}.`,
+    data: {
+      limit: result.limit,
+      remaining: result.remaining,
+      resetAt: result.resetAt
+    }
+  })
+}
+
+/**
+ * Get client IP from request (for IP-based rate limiting)
+ * Note: Renamed to avoid collision with h3's getRequestIP
+ */
+export function getClientIP(event: H3Event): string {
   const headers = event.node.req.headers
 
   const forwardedFor = headers['x-forwarded-for']
   if (forwardedFor) {
     const ip = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor
-    if (ip && ip.length > 0) {
+    if (ip) {
       const parts = ip.split(',')
-      if (parts.length > 0 && parts[0]) {
-        const extractedIp = parts[0].trim()
-        if (extractedIp.length > 0) {
-          return extractedIp
-        }
-      }
+      if (parts[0]?.trim()) return parts[0].trim()
     }
   }
 
   const realIp = headers['x-real-ip']
   if (realIp) {
     const ip = Array.isArray(realIp) ? realIp[0] : realIp
-    if (ip && ip.length > 0) {
-      return ip
-    }
-    return null
+    if (ip) return ip
   }
 
-  // Fallback to socket address
-  return event.node.req.socket.remoteAddress || null
+  return event.node.req.socket.remoteAddress || 'unknown'
 }
 
 /**
- * Helper to throw rate limit error
+ * Clear rate limit for a specific key (development only)
  */
-export function throwRateLimitError(result: RateLimitResult): never {
-  const resetDate = new Date(result.resetAt * 1000)
-  const resetIn = Math.ceil((result.resetAt * 1000 - Date.now()) / 1000 / 60) // minutes
-
-  rateLimitLogger.warn({
-    limit: result.limit,
-    remaining: result.remaining,
-    resetAt: result.resetAt,
-    resetDate: resetDate.toISOString()
-  }, 'Rate limit exceeded')
-
-  throw createError({
-    statusCode: 429,
-    statusMessage: 'Too Many Requests',
-    message: `Rate limit exceeded. Please try again in ${resetIn} minute${resetIn !== 1 ? 's' : ''}.`,
-    data: {
-      limit: result.limit,
-      remaining: result.remaining,
-      resetAt: result.resetAt,
-      resetDate: resetDate.toISOString()
+export async function clearRateLimit(key: string): Promise<{ success: boolean }> {
+  try {
+    // Clear from Redis
+    if (redisClient) {
+      await redisClient.del(`ratelimit:${key}`)
     }
-  })
+
+    // Memory limiter doesn't have a direct delete, but it will expire naturally
+    rateLimitLogger.info({ key }, 'Cleared rate limit')
+    return { success: true }
+  } catch (error) {
+    rateLimitLogger.error({ key, error }, 'Failed to clear rate limit')
+    return { success: false }
+  }
+}
+
+/**
+ * Clear all rate limits (development only)
+ */
+export async function clearAllRateLimits(): Promise<{ count: number }> {
+  try {
+    let count = 0
+
+    // Clear from Redis
+    if (redisClient) {
+      const keys = await redisClient.keys('ratelimit:*')
+      if (keys.length > 0) {
+        await redisClient.del(...keys)
+        count = keys.length
+      }
+    }
+
+    rateLimitLogger.info({ count }, 'Cleared all rate limits')
+    return { count }
+  } catch (error) {
+    rateLimitLogger.error({ error }, 'Failed to clear all rate limits')
+    return { count: 0 }
+  }
 }

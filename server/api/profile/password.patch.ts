@@ -1,4 +1,4 @@
-import type { LogtoPasswordVerificationResponse } from '../../types/logto'
+import type { LogtoPasswordVerificationResponse, LogtoUser } from '../../types/logto'
 import { createLogger } from '../../utils/logger'
 import { checkRateLimit, throwRateLimitError } from '../../utils/rate-limiter'
 import {
@@ -22,20 +22,13 @@ const logger = createLogger('password-change')
  * Errors are forwarded with { errorType, code, subCodes } so the client
  * can display specific i18n messages.
  *
- * Rate limited: 5 attempts per 15 minutes per IP to prevent brute force attacks.
+ * Rate limited: 5 attempts per 15 minutes per user.
  */
 
 export default defineEventHandler(async (event) => {
-  // Rate limiting: 5 password changes per 15 minutes per IP
-  const rateLimitResult = await checkRateLimit(event, {
-    maxRequests: 5,
-    windowSeconds: 900 // 15 minutes
-  })
-
-  if (!rateLimitResult.allowed) {
-    logger.warn('Password change rate limit exceeded')
-    throwRateLimitError(rateLimitResult)
-  }
+  // Get userId for per-user rate limiting
+  const logtoUser = event.context.logtoUser as LogtoUser | undefined
+  const userId = logtoUser?.sub
 
   const body = await readBody(event)
   const { currentPassword, password } = body
@@ -46,6 +39,19 @@ export default defineEventHandler(async (event) => {
       code: 'missing_password',
       message: 'New password is required'
     })
+  }
+
+  // Rate limiting: Per-user rate limit (5 attempts per 15 minutes per user)
+  // Falls back to IP-based if userId not available
+  const rateLimitResult = await checkRateLimit({
+    key: userId ? `password-change:${userId}` : `password-change:ip`,
+    points: 5,
+    duration: 900 // 15 minutes
+  })
+
+  if (!rateLimitResult.allowed) {
+    logger.warn('Password change rate limit exceeded')
+    throwRateLimitError(rateLimitResult)
   }
 
   // Step 1: Verify current password
@@ -62,7 +68,6 @@ export default defineEventHandler(async (event) => {
         }
       )
       verificationId = verifyResult?.verificationRecordId
-      logger.debug('Password verification successful')
     } catch (error: unknown) {
       logger.error({ error }, 'Password verification failed')
       // This means the current password is wrong

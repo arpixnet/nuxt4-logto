@@ -8,7 +8,7 @@
  */
 
 import { logClientEvent, sessionLogger } from '../utils/logger'
-import { checkRateLimit } from '../utils/rate-limiter'
+import { checkRateLimit, getClientIP } from '../utils/rate-limiter'
 import type { H3Event } from 'h3'
 
 interface ClientLogBody {
@@ -22,10 +22,10 @@ interface ClientLogBody {
 
 export default defineEventHandler(async (event: H3Event) => {
   // Rate limiting: 50 logs per minute per client (reduced from 100)
-  const rateLimitResult = await checkRateLimit(event, {
-    maxRequests: 50,
-    windowSeconds: 60,
-    identifier: `client-log:${getClientIp(event)}`
+  const rateLimitResult = await checkRateLimit({
+    key: `client-log:${getClientIp(event)}`,
+    points: 50,
+    duration: 60
   })
 
   if (!rateLimitResult.allowed) {
