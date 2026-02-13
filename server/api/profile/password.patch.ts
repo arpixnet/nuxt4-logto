@@ -1,5 +1,5 @@
 import type { H3Event } from 'h3'
-import { createLogger, logError } from '#utils/logger'
+import { createLogger, logError } from '../../utils/logger'
 
 const logger = createLogger('password-change')
 

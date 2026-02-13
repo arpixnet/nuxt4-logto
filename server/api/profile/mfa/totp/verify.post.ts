@@ -1,6 +1,6 @@
 import type { H3Event } from 'h3'
 import { TOTP, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib'
-import { createLogger, logError } from '#utils/logger'
+import { createLogger, logError } from '../../../../utils/logger'
 
 const logger = createLogger('totp-verify')
 

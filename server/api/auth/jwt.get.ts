@@ -27,7 +27,7 @@
  * ```
  */
 
-import { authLogger, logError } from '#utils/logger'
+import { authLogger, logError } from '../../utils/logger'
 
 export default defineEventHandler(async (event) => {
   // Logto client is initialized by server/middleware/api-auth.ts
