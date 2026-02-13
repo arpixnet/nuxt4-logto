@@ -1,13 +1,55 @@
 import { ref } from 'vue'
 
+/**
+ * Error structure for profile operations
+ * Matches the API error response format
+ */
+export interface ProfileError {
+  message: string
+  code?: string
+  statusCode?: number
+  errorType?: 'authentication' | 'verification' | 'validation' | 'password_update' | 'mfa' | 'account' | 'proxy'
+  subCodes?: string[]
+}
+
+/**
+ * Extract error information from API error response
+ */
+const extractError = (e: unknown): ProfileError => {
+  if (e && typeof e === 'object') {
+    const errorObj = e as Record<string, unknown>
+
+    // Check for Nuxt/H3 error format
+    if ('data' in errorObj && errorObj.data && typeof errorObj.data === 'object') {
+      const data = errorObj.data as Record<string, unknown>
+      return {
+        message: (data.message as string) || (errorObj.message as string) || 'An error occurred',
+        code: data.code as string | undefined,
+        statusCode: errorObj.statusCode as number | undefined,
+        errorType: data.errorType as ProfileError['errorType'],
+        subCodes: data.subCodes as string[] | undefined
+      }
+    }
+
+    // Standard error format
+    if ('message' in errorObj) {
+      return {
+        message: errorObj.message as string
+      }
+    }
+  }
+
+  return {
+    message: 'An unexpected error occurred'
+  }
+}
+
 // Type definitions for profile operations
 interface ProfileUpdateData {
   name?: string
   email?: string
   [key: string]: unknown
 }
-
-const clientLogger = useClientLogger()
 
 interface TotpSetupResponse {
   secret: string
@@ -25,28 +67,11 @@ interface MfaStatusResponse {
   factors: string[]
 }
 
+const clientLogger = useClientLogger()
+
 export const useUserProfile = () => {
-  // useLogtoUser returns the user object, not a composable with fetch.
-  // We rely on session updates or page reloads for now.
-  const { session: _session } = useAuthSession()
-
   const loading = ref(false)
-  const error = ref<string | null>(null)
-
-  const fetchProfile = async () => {
-    loading.value = true
-    error.value = null
-    try {
-      // Placeholder for fetching extended profile if needed
-      // await fetchUser()
-    } catch (e: unknown) {
-      const err = e as Error
-      error.value = err.message
-      clientLogger.error('profile', 'Failed to fetch profile', e)
-    } finally {
-      loading.value = false
-    }
-  }
+  const error = ref<ProfileError | null>(null)
 
   const updateProfile = async (data: ProfileUpdateData) => {
     loading.value = true
@@ -56,10 +81,8 @@ export const useUserProfile = () => {
         method: 'PATCH',
         body: data
       })
-      // await fetchUser()
     } catch (e: unknown) {
-      const err = e as Error
-      error.value = err.message || 'Failed to update profile'
+      error.value = extractError(e)
       throw e
     } finally {
       loading.value = false
@@ -75,8 +98,7 @@ export const useUserProfile = () => {
         body: { password, currentPassword }
       })
     } catch (e: unknown) {
-      const err = e as Error
-      error.value = err.message || 'Failed to change password'
+      error.value = extractError(e)
       throw e
     } finally {
       loading.value = false
@@ -93,8 +115,7 @@ export const useUserProfile = () => {
       })
       return response // { secret, qrCodeUri }
     } catch (e: unknown) {
-      const err = e as Error
-      error.value = err.message
+      error.value = extractError(e)
       throw e
     } finally {
       loading.value = false
@@ -112,8 +133,7 @@ export const useUserProfile = () => {
       // Return the result so the caller can check if it was successful
       return result
     } catch (e: unknown) {
-      const err = e as Error
-      error.value = err.message
+      error.value = extractError(e)
       throw e
     } finally {
       loading.value = false
@@ -129,10 +149,8 @@ export const useUserProfile = () => {
         method: 'DELETE',
         body: { password }
       })
-      // await fetchUser()
     } catch (e: unknown) {
-      const err = e as Error
-      error.value = err.message
+      error.value = extractError(e)
       throw e
     } finally {
       loading.value = false
@@ -160,8 +178,7 @@ export const useUserProfile = () => {
         body: { password }
       })
     } catch (e: unknown) {
-      const err = e as Error
-      error.value = err.message
+      error.value = extractError(e)
       throw e
     } finally {
       loading.value = false
@@ -171,7 +188,6 @@ export const useUserProfile = () => {
   return {
     loading,
     error,
-    fetchProfile,
     updateProfile,
     changePassword,
     setupTotp,

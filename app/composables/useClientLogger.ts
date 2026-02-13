@@ -18,13 +18,24 @@ interface ClientLoggerOptions {
 }
 
 /**
- * Client Logger Composable
- *
- * Provides a unified logging interface for the client side.
- * In development, logs are printed to console with prefixes.
- * In production, only critical logs (error, warn) are sent to the server.
+ * Type for the logger instance
  */
-export const useClientLogger = (options: ClientLoggerOptions = {}) => {
+export type ClientLogger = {
+  debug: (context: string, message: string, data?: Record<string, unknown>) => void
+  info: (context: string, message: string, data?: Record<string, unknown>) => void
+  warn: (context: string, message: string, data?: Record<string, unknown>) => void
+  error: (context: string, message: string, error?: unknown, data?: Record<string, unknown>) => void
+  security: (event: string, data?: Record<string, unknown>) => void
+}
+
+// Singleton cache for the logger instance
+let cachedLogger: ClientLogger | null = null
+let cachedOptions: ClientLoggerOptions = {}
+
+/**
+ * Create a new logger instance
+ */
+const createLogger = (options: ClientLoggerOptions = {}): ClientLogger => {
   const {
     serverMinLevel = 'error'
   } = options
@@ -165,6 +176,27 @@ export const useClientLogger = (options: ClientLoggerOptions = {}) => {
 }
 
 /**
- * Type for the logger instance
+ * Client Logger Composable
+ *
+ * Provides a unified logging interface for the client side.
+ * In development, logs are printed to console with prefixes.
+ * In production, only critical logs (error, warn) are sent to the server.
+ *
+ * Uses singleton pattern to avoid creating multiple logger instances.
  */
-export type ClientLogger = ReturnType<typeof useClientLogger>
+export const useClientLogger = (options: ClientLoggerOptions = {}): ClientLogger => {
+  // Return cached instance if options are the same or not specified
+  if (cachedLogger) {
+    // If new options are provided and different from cached, create new instance
+    if (options.serverMinLevel && options.serverMinLevel !== cachedOptions.serverMinLevel) {
+      cachedOptions = options
+      cachedLogger = createLogger(options)
+    }
+    return cachedLogger
+  }
+
+  // Create and cache new instance
+  cachedOptions = options
+  cachedLogger = createLogger(options)
+  return cachedLogger
+}
