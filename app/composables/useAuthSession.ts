@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import type { UserInfoResponse } from '@logto/nuxt'
+import type { UserCustomData } from '#shared/types/user-custom-data'
 
 /**
  * useAuthSession composable
@@ -18,8 +19,7 @@ import type { UserInfoResponse } from '@logto/nuxt'
  * Extends the official UserInfoResponse type from Logto
  */
 export interface LogtoUser extends UserInfoResponse {
-  // Additional custom properties if needed
-  custom_data?: Record<string, unknown>
+  custom_data?: UserCustomData
 }
 
 /**

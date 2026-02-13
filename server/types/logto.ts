@@ -4,16 +4,7 @@
  * This file contains all type definitions for Logto integration.
  */
 
-/**
- * User custom data stored in Logto
- * Customize this interface based on your application's custom fields
- */
-export interface UserCustomData {
-  address?: string
-  birthDate?: string
-  // Add more custom fields here as needed
-  [key: string]: unknown
-}
+import type { UserCustomData } from '#shared/types/user-custom-data'
 
 /**
  * Logto account API client interface
