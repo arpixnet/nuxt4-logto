@@ -109,11 +109,6 @@ export default defineEventHandler(async (event) => {
 
     // Store user claims in event context
     event.context.user = claims
-
-    authLogger.debug({
-      userId: claims.sub,
-      path: event.path
-    }, 'User authenticated successfully')
   } catch (error) {
     authLogger.warn({
       path: event.path,

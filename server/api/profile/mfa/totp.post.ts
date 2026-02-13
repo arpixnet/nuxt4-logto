@@ -28,7 +28,6 @@ export default defineEventHandler(async (event) => {
     // Logto didn't provide QR code (e.g., when secret already exists but not verified)
     // Build the otpauth:// URI ourselves so VueQrcode can generate the QR
     qrCodeUri = buildOtpAuthUri(result.secret, userEmail)
-    logger.debug({ hasSecret: true, generatedQrUri: true }, 'Generated otpauth URI from secret')
   }
 
   return {

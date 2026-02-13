@@ -35,7 +35,6 @@ export default defineEventHandler(async (event) => {
   // If no verificationId provided but we have password, get verificationId from password verification
   if (!effectiveVerificationId && password) {
     effectiveVerificationId = await getVerificationIdByPassword(event, password)
-    logger.debug('Got verificationId from password verification')
   }
 
   // Try to bind TOTP with verificationId using my-account API with user's access token
