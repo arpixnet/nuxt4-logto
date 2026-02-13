@@ -1,7 +1,6 @@
 import { TOTP, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib'
 import { createLogger } from '../../../../utils/logger'
 import {
-  logtoProxy,
   getVerificationIdByPassword,
   getLogtoClient,
   getLogtoEndpoint,
