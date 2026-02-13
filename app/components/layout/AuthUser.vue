@@ -6,18 +6,6 @@ const { t } = useI18n()
 const clientLogger = useClientLogger()
 const user = computed(() => session.value?.user)
 
-// Log user authentication status changes
-watchEffect(() => {
-  if (isAuthenticated.value && user.value) {
-    clientLogger.debug('auth-user', 'Authenticated user rendered', {
-      userId: user.value.sub,
-      username: user.value.username
-    })
-  } else if (!isAuthenticated.value) {
-    clientLogger.debug('auth-user', 'Not authenticated, showing login button')
-  }
-})
-
 const userInitial = computed(() => {
   if (!user.value?.username) {
     if (isAuthenticated.value) {
