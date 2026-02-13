@@ -10,6 +10,10 @@ const copyButtonText = ref<string>(t('jwt.copy'))
 const authClient = useAuthClient()
 const clientLogger = useClientLogger()
 
+// SEO meta using i18n
+const seoTitle = computed(() => t('seo.home.title'))
+const seoDescription = computed(() => t('seo.home.description'))
+
 useHead({
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1' }
@@ -22,14 +26,11 @@ useHead({
   }
 })
 
-const title = 'Nuxt Starter Template'
-const description = 'A production-ready starter template powered by Nuxt UI. Build beautiful, accessible, and performant applications in minutes, not hours.'
-
 useSeoMeta({
-  title,
-  description,
-  ogTitle: title,
-  ogDescription: description,
+  title: seoTitle,
+  description: seoDescription,
+  ogTitle: seoTitle,
+  ogDescription: seoDescription,
   ogImage: 'https://ui.nuxt.com/assets/templates/nuxt/starter-light.png',
   twitterImage: 'https://ui.nuxt.com/assets/templates/nuxt/starter-light.png',
   twitterCard: 'summary_large_image'
@@ -85,21 +86,55 @@ const copyToken = async () => {
     }
   }
 }
+
+// Features for the page section using i18n
+const features = computed(() => [
+  {
+    icon: 'i-lucide-rocket',
+    title: t('seo.home.features.productionReady.title'),
+    description: t('seo.home.features.productionReady.description')
+  },
+  {
+    icon: 'i-lucide-palette',
+    title: t('seo.home.features.beautifulDefault.title'),
+    description: t('seo.home.features.beautifulDefault.description')
+  },
+  {
+    icon: 'i-lucide-zap',
+    title: t('seo.home.features.lightningFast.title'),
+    description: t('seo.home.features.lightningFast.description')
+  },
+  {
+    icon: 'i-lucide-blocks',
+    title: t('seo.home.features.componentsIncluded.title'),
+    description: t('seo.home.features.componentsIncluded.description')
+  },
+  {
+    icon: 'i-lucide-code-2',
+    title: t('seo.home.features.developerExperience.title'),
+    description: t('seo.home.features.developerExperience.description')
+  },
+  {
+    icon: 'i-lucide-shield-check',
+    title: t('seo.home.features.builtForScale.title'),
+    description: t('seo.home.features.builtForScale.description')
+  }
+])
 </script>
 
 <template>
   <UContainer>
     <UPageHero
-      title="Nuxt Starter Template"
-      description="A production-ready starter template powered by Nuxt UI. Build beautiful, accessible, and performant applications in minutes, not hours."
+      :title="t('seo.home.title')"
+      :description="t('seo.home.description')"
       :links="[{
-        label: 'Get started',
+        label: t('seo.home.getStarted'),
         to: 'https://github.com/arpixnet/nuxt4-logto/README.md',
         target: '_blank',
         trailingIcon: 'i-lucide-arrow-right',
         size: 'xl'
       }, {
-        label: 'Use this template',
+        label: t('seo.home.useTemplate'),
         to: 'https://github.com/arpixnet/nuxt4-logto',
         target: '_blank',
         icon: 'i-simple-icons-github',
@@ -185,33 +220,9 @@ const copyToken = async () => {
 
     <UPageSection
       id="features"
-      title="Everything you need to build modern Nuxt apps"
-      description="Start with a solid foundation. This template includes all the essentials for building production-ready applications with Nuxt UI's powerful component system."
-      :features="[{
-        icon: 'i-lucide-rocket',
-        title: 'Production-ready from day one',
-        description: 'Pre-configured with TypeScript, ESLint, Tailwind CSS, and all the best practices. Focus on building features, not setting up tooling.'
-      }, {
-        icon: 'i-lucide-palette',
-        title: 'Beautiful by default',
-        description: 'Leveraging Nuxt UI\'s design system with automatic dark mode, consistent spacing, and polished components that look great out of the box.'
-      }, {
-        icon: 'i-lucide-zap',
-        title: 'Lightning fast',
-        description: 'Optimized for performance with SSR/SSG support, automatic code splitting, and edge-ready deployment. Your users will love the speed.'
-      }, {
-        icon: 'i-lucide-blocks',
-        title: '100+ components included',
-        description: 'Access Nuxt UI\'s comprehensive component library. From forms to navigation, everything is accessible, responsive, and customizable.'
-      }, {
-        icon: 'i-lucide-code-2',
-        title: 'Developer experience first',
-        description: 'Auto-imports, hot module replacement, and TypeScript support. Write less boilerplate and ship more features.'
-      }, {
-        icon: 'i-lucide-shield-check',
-        title: 'Built for scale',
-        description: 'Enterprise-ready architecture with proper error handling, SEO optimization, and security best practices built-in.'
-      }]"
+      :title="t('seo.home.featuresTitle')"
+      :description="t('seo.home.featuresDescription')"
+      :features="features"
     />
   </UContainer>
 </template>

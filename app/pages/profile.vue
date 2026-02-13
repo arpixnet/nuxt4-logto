@@ -14,6 +14,13 @@ const { updateProfile, changePassword, setupTotp, verifyTotp, disableTotp, getMf
 const toast = useToast()
 const clientLogger = useClientLogger()
 
+// Password visibility toggles using composable
+const currentPasswordVisibility = usePasswordVisibility()
+const newPasswordVisibility = usePasswordVisibility()
+const totpPasswordVisibility = usePasswordVisibility()
+const disable2FAPasswordVisibility = usePasswordVisibility()
+const deleteAccountPasswordVisibility = usePasswordVisibility()
+
 // Tabs
 const items = [{
   slot: 'profile',
@@ -68,10 +75,6 @@ const passwordState = reactive({
   currentPassword: '',
   password: ''
 })
-
-// Password visibility toggles
-const showCurrentPassword = ref(false)
-const showNewPassword = ref(false)
 
 // Password strength indicator
 function checkStrength(str: string) {
@@ -214,8 +217,6 @@ const is2FAEnabled = computed(() => mfaStatus.value.enabled)
 const is2FAModalOpen = ref(false)
 const isDisable2FAModalOpen = ref(false)
 const disable2FAPassword = ref('')
-const showDisable2FAPassword = ref(false)
-const showTotpPassword = ref(false)
 const totpStep = ref<'start' | 'scan' | 'verify' | 'password'>('start')
 const totpData = ref<{ secret: string, qrCodeUri: string, verificationId?: string } | null>(null)
 const totpCode = ref<string[]>([])
@@ -225,7 +226,7 @@ async function start2FAFlow() {
   totpStep.value = 'start'
   totpPassword.value = ''
   totpCode.value = []
-  showTotpPassword.value = false
+  totpPasswordVisibility.hide()
   is2FAModalOpen.value = true
   // Retrieve secret
   try {
@@ -274,7 +275,7 @@ async function verify2FASetup() {
 async function disable2FA() {
   // Show the disable modal instead of using confirm()
   disable2FAPassword.value = ''
-  showDisable2FAPassword.value = false
+  disable2FAPasswordVisibility.hide()
   isDisable2FAModalOpen.value = true
 }
 
@@ -296,7 +297,6 @@ async function confirmDisable2FA() {
 // Delete Account
 const isDeleteAccountModalOpen = ref(false)
 const deleteAccountPassword = ref('')
-const showDeleteAccountPassword = ref(false)
 
 async function confirmDeleteAccount() {
   if (!deleteAccountPassword.value) return
@@ -380,7 +380,7 @@ async function confirmDeleteAccount() {
             </UFormField>
 
             <UFormField
-              label="Phone"
+              :label="t('profile.phone')"
               name="phone"
             >
               <UInput
@@ -438,7 +438,7 @@ async function confirmDeleteAccount() {
               >
                 <UInput
                   v-model="passwordState.currentPassword"
-                  :type="showCurrentPassword ? 'text' : 'password'"
+                  :type="currentPasswordVisibility.type.value"
                   icon="i-lucide-lock"
                   :ui="{ trailing: 'pe-1' }"
                   class="w-full"
@@ -448,10 +448,10 @@ async function confirmDeleteAccount() {
                       color="neutral"
                       variant="link"
                       size="sm"
-                      :icon="showCurrentPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
-                      :aria-label="showCurrentPassword ? 'Hide password' : 'Show password'"
-                      :aria-pressed="showCurrentPassword"
-                      @click="showCurrentPassword = !showCurrentPassword"
+                      :icon="currentPasswordVisibility.icon.value"
+                      :aria-label="currentPasswordVisibility.ariaLabel.value"
+                      :aria-pressed="currentPasswordVisibility.visible.value"
+                      @click="currentPasswordVisibility.toggle"
                     />
                   </template>
                 </UInput>
@@ -464,7 +464,7 @@ async function confirmDeleteAccount() {
                 <div class="space-y-2 w-full">
                   <UInput
                     v-model="passwordState.password"
-                    :type="showNewPassword ? 'text' : 'password'"
+                    :type="newPasswordVisibility.type.value"
                     :color="strengthColor"
                     icon="i-lucide-lock"
                     :aria-invalid="strengthScore < 4"
@@ -477,10 +477,10 @@ async function confirmDeleteAccount() {
                         color="neutral"
                         variant="link"
                         size="sm"
-                        :icon="showNewPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
-                        :aria-label="showNewPassword ? 'Hide password' : 'Show password'"
-                        :aria-pressed="showNewPassword"
-                        @click="showNewPassword = !showNewPassword"
+                        :icon="newPasswordVisibility.icon.value"
+                        :aria-label="newPasswordVisibility.ariaLabel.value"
+                        :aria-pressed="newPasswordVisibility.visible.value"
+                        @click="newPasswordVisibility.toggle"
                       />
                     </template>
                   </UInput>
@@ -633,7 +633,7 @@ async function confirmDeleteAccount() {
             <UFormField :label="t('profile.currentPassword')">
               <UInput
                 v-model="totpPassword"
-                :type="showTotpPassword ? 'text' : 'password'"
+                :type="totpPasswordVisibility.type.value"
                 placeholder="••••••••"
                 autofocus
                 icon="i-lucide-lock"
@@ -645,10 +645,10 @@ async function confirmDeleteAccount() {
                     color="neutral"
                     variant="link"
                     size="sm"
-                    :icon="showTotpPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
-                    :aria-label="showTotpPassword ? 'Hide password' : 'Show password'"
-                    :aria-pressed="showTotpPassword"
-                    @click="showTotpPassword = !showTotpPassword"
+                    :icon="totpPasswordVisibility.icon.value"
+                    :aria-label="totpPasswordVisibility.ariaLabel.value"
+                    :aria-pressed="totpPasswordVisibility.visible.value"
+                    @click="totpPasswordVisibility.toggle"
                   />
                 </template>
               </UInput>
@@ -753,7 +753,7 @@ async function confirmDeleteAccount() {
           <UFormField :label="t('profile.currentPassword')">
             <UInput
               v-model="disable2FAPassword"
-              :type="showDisable2FAPassword ? 'text' : 'password'"
+              :type="disable2FAPasswordVisibility.type.value"
               placeholder="••••••••"
               autofocus
               icon="i-lucide-lock"
@@ -765,10 +765,10 @@ async function confirmDeleteAccount() {
                   color="neutral"
                   variant="link"
                   size="sm"
-                  :icon="showDisable2FAPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
-                  :aria-label="showDisable2FAPassword ? 'Hide password' : 'Show password'"
-                  :aria-pressed="showDisable2FAPassword"
-                  @click="showDisable2FAPassword = !showDisable2FAPassword"
+                  :icon="disable2FAPasswordVisibility.icon.value"
+                  :aria-label="disable2FAPasswordVisibility.ariaLabel.value"
+                  :aria-pressed="disable2FAPasswordVisibility.visible.value"
+                  @click="disable2FAPasswordVisibility.toggle"
                 />
               </template>
             </UInput>
@@ -818,7 +818,7 @@ async function confirmDeleteAccount() {
           <UFormField :label="t('profile.currentPassword')">
             <UInput
               v-model="deleteAccountPassword"
-              :type="showDeleteAccountPassword ? 'text' : 'password'"
+              :type="deleteAccountPasswordVisibility.type.value"
               placeholder="••••••••"
               name="delete-account-password"
               autofocus
@@ -833,10 +833,10 @@ async function confirmDeleteAccount() {
                   color="neutral"
                   variant="link"
                   size="sm"
-                  :icon="showDeleteAccountPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
-                  :aria-label="showDeleteAccountPassword ? 'Hide password' : 'Show password'"
-                  :aria-pressed="showDeleteAccountPassword"
-                  @click="showDeleteAccountPassword = !showDeleteAccountPassword"
+                  :icon="deleteAccountPasswordVisibility.icon.value"
+                  :aria-label="deleteAccountPasswordVisibility.ariaLabel.value"
+                  :aria-pressed="deleteAccountPasswordVisibility.visible.value"
+                  @click="deleteAccountPasswordVisibility.toggle"
                 />
               </template>
             </UInput>

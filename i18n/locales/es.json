@@ -1,4 +1,40 @@
 {
+  "seo": {
+    "home": {
+      "title": "Plantilla Inicial Nuxt",
+      "description": "Una plantilla lista para producción impulsada por Nuxt UI. Construye aplicaciones hermosas, accesibles y de alto rendimiento en minutos, no en horas.",
+      "getStarted": "Comenzar",
+      "useTemplate": "Usar esta plantilla",
+      "featuresTitle": "Todo lo que necesitas para construir apps Nuxt modernas",
+      "featuresDescription": "Comienza con una base sólida. Esta plantilla incluye todos los elementos esenciales para construir aplicaciones listas para producción con el potente sistema de componentes de Nuxt UI.",
+      "features": {
+        "productionReady": {
+          "title": "Listo para producción desde el día uno",
+          "description": "Preconfigurado con TypeScript, ESLint, Tailwind CSS y todas las mejores prácticas. Enfócate en construir funcionalidades, no en configurar herramientas."
+        },
+        "beautifulDefault": {
+          "title": "Hermoso por defecto",
+          "description": "Aprovechando el sistema de diseño de Nuxt UI con modo oscuro automático, espaciado consistente y componentes pulidos que se ven geniales desde el inicio."
+        },
+        "lightningFast": {
+          "title": "Ultrarrápido",
+          "description": "Optimizado para rendimiento con soporte SSR/SSG, división de código automática y despliegue listo para edge. Tus usuarios amarán la velocidad."
+        },
+        "componentsIncluded": {
+          "title": "Más de 100 componentes incluidos",
+          "description": "Accede a la biblioteca completa de componentes de Nuxt UI. Desde formularios hasta navegación, todo es accesible, responsivo y personalizable."
+        },
+        "developerExperience": {
+          "title": "Experiencia del desarrollador primero",
+          "description": "Importaciones automáticas, reemplazo de módulos en caliente y soporte TypeScript. Escribe menos código repetitivo y entrega más funcionalidades."
+        },
+        "builtForScale": {
+          "title": "Construido para escalar",
+          "description": "Arquitectura lista para empresas con manejo de errores apropiado, optimización SEO y mejores prácticas de seguridad integradas."
+        }
+      }
+    }
+  },
   "common": {
     "appName": "Arpix Solutions",
     "changeLanguage": "Cambiar Idioma",
@@ -236,6 +272,7 @@
     "saveChanges": "Guardar Cambios",
     "cancel": "Cancelar",
     "emailNotChangeable": "El correo no puede ser cambiado actualmente",
+    "phone": "Teléfono",
     "address": "Dirección",
     "changePassword": "Cambiar Contraseña",
     "passwordDescription": "Mantén tu cuenta segura usando una contraseña fuerte.",
