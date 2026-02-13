@@ -1,4 +1,7 @@
 import type { H3Event } from 'h3'
+import { createLogger, logError } from '#utils/logger'
+
+const logger = createLogger('mfa-totp')
 
 interface LogtoTotpSecretResponse {
   secret: string
@@ -41,11 +44,10 @@ const proxyLogto = async (event: H3Event, path: string, options: Record<string, 
     })
   } catch (e: unknown) {
     const error = e as LogtoErrorResponse
-    console.error('Logto API proxy error:', {
+    logError(logger, error, 'Logto API proxy error', {
       path,
       status: error.response?.status,
-      data: error.response?._data,
-      message: error.message
+      data: error.response?._data
     })
     throw createError({
       statusCode: error.response?.status || 500,
@@ -74,8 +76,8 @@ const buildOtpAuthUri = (secret: string, email: string, issuer: string = 'NuxtAp
 
 export default defineEventHandler(async (event) => {
   // Get user info from session to build otpauth URI if needed
-  const session = event.context.session as { user?: { email?: string } } | undefined
-  const userEmail = session?.user?.email || 'user@example.com'
+  const logtoUser = event.context.logtoUser as { email?: string } | undefined
+  const userEmail = logtoUser?.email || 'user@example.com'
 
   // Note: Skipping the GET /mfa-verifications check since it requires 'identity' scope
   // which may not be available. The generate endpoint works without it.
@@ -88,9 +90,6 @@ export default defineEventHandler(async (event) => {
     method: 'POST'
   }) as LogtoTotpSecretResponse
 
-  // Debug: Log the full response to see what Logto returns
-  console.log('Logto TOTP secret response:', JSON.stringify(result, null, 2))
-
   // If Logto provides the QR code URI, use it directly
   // Otherwise, build the otpauth:// URI ourselves from the secret
   let qrCodeUri = result.secretQrCode
@@ -99,23 +98,12 @@ export default defineEventHandler(async (event) => {
     // Logto didn't provide QR code (e.g., when secret already exists but not verified)
     // Build the otpauth:// URI ourselves so VueQrcode can generate the QR
     qrCodeUri = buildOtpAuthUri(result.secret, userEmail)
-    console.log('Generated otpauth URI from secret:', qrCodeUri.substring(0, 50) + '...')
+    logger.debug({ hasSecret: true, generatedQrUri: true }, 'Generated otpauth URI from secret')
   }
 
-  const response = {
+  return {
     secret: result.secret,
     qrCodeUri,
     verificationId: result.verificationId
   }
-
-  // Debug: Log what we're returning to the frontend
-  console.log('TOTP setup response to frontend:', {
-    hasSecret: !!response.secret,
-    secretLength: response.secret?.length,
-    hasQrCodeUri: !!response.qrCodeUri,
-    qrCodeUriPreview: response.qrCodeUri?.substring(0, 30) + '...',
-    hasVerificationId: !!response.verificationId
-  })
-
-  return response
 })

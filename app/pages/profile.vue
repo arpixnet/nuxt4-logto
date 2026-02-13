@@ -12,6 +12,7 @@ const { t } = useI18n()
 const { session } = useAuthSession()
 const { updateProfile, changePassword, setupTotp, verifyTotp, disableTotp, getMfaStatus, deleteAccount, loading, error: _error } = useUserProfile()
 const toast = useToast()
+const clientLogger = useClientLogger()
 
 // Tabs
 const items = [{
@@ -126,7 +127,7 @@ async function onPasswordSubmit(event: FormSubmitEvent<PasswordSchema>) {
     passwordState.currentPassword = ''
     passwordState.password = ''
   } catch (e: unknown) {
-    console.error(e)
+    clientLogger.error('profile', 'Password change failed', e)
     const serverError = e as ServerError
     const errorData = serverError?.data?.data // server createError puts our data here
     const { title, description } = resolvePasswordError(errorData)

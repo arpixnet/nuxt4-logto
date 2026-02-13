@@ -1,4 +1,7 @@
 import type { H3Event } from 'h3'
+import { createLogger, logError } from '#utils/logger'
+
+const logger = createLogger('account-delete')
 
 interface LogtoErrorResponse {
   response?: {
@@ -51,7 +54,9 @@ const getVerificationIdByPassword = async (event: H3Event, password: string): Pr
     return verificationId
   } catch (e: unknown) {
     const error = e as LogtoErrorResponse
-    console.error('Password verification failed:', error.response?.status, error.response?._data)
+    logError(logger, error, 'Password verification failed', {
+      status: error.response?.status
+    })
     throw createError({
       statusCode: error.response?.status || 500,
       message: error.response?._data?.message || 'Password verification failed',
@@ -73,6 +78,7 @@ const getM2MToken = async (): Promise<string> => {
   const managementApiResource = 'https://default.logto.app/api'
 
   if (!clientId || !clientSecret) {
+    logger.error('M2M credentials for user deletion not configured')
     throw createError({
       statusCode: 500,
       message: 'M2M credentials for user deletion not configured',
@@ -96,7 +102,9 @@ const getM2MToken = async (): Promise<string> => {
     return response.access_token
   } catch (e: unknown) {
     const error = e as LogtoErrorResponse
-    console.error('Failed to get M2M token:', error.response?.status, error.response?._data)
+    logError(logger, error, 'Failed to get M2M token', {
+      status: error.response?.status
+    })
     throw createError({
       statusCode: 500,
       message: 'Failed to authenticate with Logto Management API',
@@ -106,13 +114,9 @@ const getM2MToken = async (): Promise<string> => {
 }
 
 export default defineEventHandler(async (event) => {
-  console.log('=== Delete Account Endpoint Called ===')
-
   // Get user ID from logtoUser context (injected by @logto/nuxt)
   const logtoUser = event.context.logtoUser as { sub?: string } | undefined
   const userId = logtoUser?.sub
-
-  console.log('User ID:', userId)
 
   if (!userId) {
     throw createError({
@@ -125,8 +129,6 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<{ password?: string }>(event).catch(() => ({ password: undefined }))
   const { password } = body
 
-  console.log('Password provided:', !!password)
-
   if (!password) {
     throw createError({
       statusCode: 400,
@@ -137,17 +139,12 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Step 1: Verify password to ensure user consent
-    console.log('Step 1: Verifying password...')
     await getVerificationIdByPassword(event, password)
-    console.log('Password verified for account deletion')
 
     // Step 2: Get M2M token for Management API
-    console.log('Step 2: Getting M2M token...')
     const m2mToken = await getM2MToken()
-    console.log('M2M token obtained for user deletion')
 
     // Step 3: Delete user via Management API
-    console.log('Step 3: Deleting user via Management API...')
     const logtoEndpoint = process.env.NUXT_LOGTO_ENDPOINT || 'http://localhost:3001'
     await $fetch(`${logtoEndpoint}/api/users/${userId}`, {
       method: 'DELETE',
@@ -157,7 +154,7 @@ export default defineEventHandler(async (event) => {
       }
     })
 
-    console.log(`User account deleted: ${userId}`)
+    logger.info({ userId }, 'User account deleted')
 
     return {
       success: true,
@@ -165,10 +162,9 @@ export default defineEventHandler(async (event) => {
     }
   } catch (e: unknown) {
     const error = e as LogtoErrorResponse & { statusCode?: number }
-    console.error('Account deletion error:', {
+    logError(logger, error, 'Account deletion error', {
       status: error.statusCode || error.response?.status,
-      message: error.message,
-      data: error.response?._data
+      code: error.response?._data?.code
     })
 
     // Don't expose internal errors to client

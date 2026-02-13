@@ -1,3 +1,7 @@
+import { createLogger, logError } from '#utils/logger'
+
+const logger = createLogger('mfa-status')
+
 interface LogtoMfaFactor {
   id: string
   type: 'Totp' | 'BackupCode' | 'WebAuthn'
@@ -42,8 +46,6 @@ export default defineEventHandler(async (event) => {
       }
     })
 
-    console.log('MFA status response from my-account API:', JSON.stringify(response, null, 2))
-
     // Handle both response formats: direct array or { data: array }
     let mfaFactors: LogtoMfaFactor[] = []
     if (Array.isArray(response)) {
@@ -61,7 +63,9 @@ export default defineEventHandler(async (event) => {
     }
   } catch (e: unknown) {
     const error = e as LogtoErrorResponse
-    console.error('Failed to fetch MFA status:', error.response?.status, error.response?._data)
+    logError(logger, error, 'Failed to fetch MFA status', {
+      status: error.response?.status
+    })
     throw createError({
       statusCode: error.response?.status || 500,
       message: error.response?._data?.message || 'Failed to fetch MFA status',

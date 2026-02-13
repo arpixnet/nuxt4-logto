@@ -7,6 +7,8 @@ interface ProfileUpdateData {
   [key: string]: unknown
 }
 
+const clientLogger = useClientLogger()
+
 interface TotpSetupResponse {
   secret: string
   qrCodeUri: string
@@ -40,7 +42,7 @@ export const useUserProfile = () => {
     } catch (e: unknown) {
       const err = e as Error
       error.value = err.message
-      console.error(e)
+      clientLogger.error('profile', 'Failed to fetch profile', e)
     } finally {
       loading.value = false
     }
@@ -144,8 +146,7 @@ export const useUserProfile = () => {
       })
       return result
     } catch (e: unknown) {
-      const err = e as Error
-      console.error('Failed to get MFA status:', err.message)
+      clientLogger.error('mfa', 'Failed to get MFA status', e)
       return { enabled: false, factors: [] }
     }
   }

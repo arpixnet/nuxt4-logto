@@ -1,4 +1,7 @@
 import type { H3Event } from 'h3'
+import { createLogger, logError } from '#utils/logger'
+
+const logger = createLogger('profile-update')
 
 type ProxyOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
@@ -30,7 +33,9 @@ const proxyLogto = async (event: H3Event, path: string, options: ProxyOptions = 
     })
   } catch (e) {
     const error = e as { response?: { status: number }, message?: string }
-    console.error('Logto API proxy error:', error)
+    logError(logger, error, 'Logto API proxy error', {
+      status: error.response?.status
+    })
     throw createError({
       statusCode: error.response?.status || 500,
       message: error.message || 'Failed to communicate with Logto'

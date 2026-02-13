@@ -27,6 +27,8 @@
  * ```
  */
 
+import { authLogger, logError } from '#utils/logger'
+
 export default defineEventHandler(async (event) => {
   // Logto client is initialized by server/middleware/api-auth.ts
   const client = event.context.logtoClient as unknown as {
@@ -40,6 +42,7 @@ export default defineEventHandler(async (event) => {
   }
 
   if (!client) {
+    authLogger.error('Logto client not available')
     throw createError({
       statusCode: 500,
       statusMessage: 'Logto client not available'
@@ -49,8 +52,6 @@ export default defineEventHandler(async (event) => {
   try {
     // Get the ID token directly from Logto client
     const token = await client.getIdToken()
-
-    console.log('[JWT] Token retrieved:', !!token, 'Prefix:', token?.substring(0, 20))
 
     if (!token) {
       throw createError({
@@ -64,15 +65,10 @@ export default defineEventHandler(async (event) => {
       fetchUserInfo: true
     })
 
-    console.log('[JWT] Context:', {
-      isAuthenticated: context.isAuthenticated,
-      hasUserInfo: !!context.userInfo
-    })
-
     // Decode JWT to get expiration time
     const parts = token.split('.')
     if (parts.length !== 3) {
-      console.error('[JWT] Invalid token format - parts:', parts.length, 'Token:', token)
+      authLogger.error({ partsLength: parts.length }, 'Invalid token format')
       throw new Error('Invalid token format')
     }
 
@@ -84,7 +80,7 @@ export default defineEventHandler(async (event) => {
       expiresAt: payload.exp
     }
   } catch (error) {
-    console.error('Error getting JWT token:', error)
+    logError(authLogger, error, 'Error getting JWT token')
 
     // Handle authentication errors specifically
     if (error instanceof Error && error.message.includes('User is not authenticated')) {

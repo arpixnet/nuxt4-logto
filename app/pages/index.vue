@@ -8,6 +8,7 @@ const jwtPending = ref(false)
 const jwtExpanded = ref(false)
 const copyButtonText = ref<string>(t('jwt.copy'))
 const authClient = useAuthClient()
+const clientLogger = useClientLogger()
 
 useHead({
   meta: [
@@ -49,10 +50,10 @@ onMounted(async () => {
         jwtToken.value = data.token
       }
       if (error) {
-        console.error('[JWT] Error fetching token:', error)
+        clientLogger.error('jwt', 'Error fetching token', error)
       }
     } catch (error) {
-      console.error('[JWT] Failed to fetch token:', error)
+      clientLogger.error('jwt', 'Failed to fetch token', error)
     } finally {
       jwtPending.value = false
     }
@@ -69,7 +70,7 @@ const copyToken = async () => {
         copyButtonText.value = t('jwt.copy')
       }, 2000)
     } catch (error) {
-      console.error('Failed to copy token:', error)
+      clientLogger.warn('jwt', 'Failed to copy token to clipboard, using fallback')
       // Fallback para navegadores que no soporten la API
       const textArea = document.createElement('textarea')
       textArea.value = jwtToken.value

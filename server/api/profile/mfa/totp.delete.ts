@@ -1,4 +1,7 @@
 import type { H3Event } from 'h3'
+import { createLogger, logError } from '#utils/logger'
+
+const logger = createLogger('totp-delete')
 
 interface LogtoMfaFactor {
   id: string
@@ -58,7 +61,9 @@ const getVerificationIdByPassword = async (event: H3Event, password: string): Pr
     return verificationId
   } catch (e: unknown) {
     const error = e as LogtoErrorResponse
-    console.error('Password verification failed:', error.response?.status, error.response?._data)
+    logError(logger, error, 'Password verification failed', {
+      status: error.response?.status
+    })
     throw createError({
       statusCode: error.response?.status || 500,
       message: error.response?._data?.message || 'Password verification failed',
@@ -98,11 +103,10 @@ const proxyLogto = async (event: H3Event, path: string, options: Record<string, 
     })
   } catch (e: unknown) {
     const error = e as LogtoErrorResponse
-    console.error('Logto API proxy error:', {
+    logError(logger, error, 'Logto API proxy error', {
       path,
       status: error.response?.status,
-      data: error.response?._data,
-      message: error.message
+      code: error.response?._data?.code
     })
     throw createError({
       statusCode: error.response?.status || 500,
@@ -128,7 +132,7 @@ export default defineEventHandler(async (event) => {
   try {
     // Step 1: Verify password and get verification ID
     const verificationId = await getVerificationIdByPassword(event, password)
-    console.log('Got verification ID for TOTP deletion')
+    logger.debug('Got verification ID for TOTP deletion')
 
     // Step 2: List current MFA factors
     const mfaList = await proxyLogto(event, '/mfa-verifications', {
@@ -145,14 +149,16 @@ export default defineEventHandler(async (event) => {
     }
 
     // Step 3: Delete the specific factor with verification header
-    return await proxyLogto(event, `/mfa-verifications/${totp.id}`, {
+    const result = await proxyLogto(event, `/mfa-verifications/${totp.id}`, {
       method: 'DELETE'
     }, verificationId)
+
+    logger.info('TOTP factor deleted successfully')
+    return result
   } catch (e: unknown) {
     const error = e as LogtoErrorResponse & { statusCode?: number }
-    console.error('Disable 2FA error:', {
-      status: error.statusCode || error.response?.status,
-      message: error.message
+    logError(logger, error, 'Disable 2FA error', {
+      status: error.statusCode || error.response?.status
     })
     throw createError({
       statusCode: error.statusCode || error.response?.status || 500,

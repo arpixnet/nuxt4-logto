@@ -1,5 +1,8 @@
 import type { H3Event } from 'h3'
 import { TOTP, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib'
+import { createLogger, logError } from '#utils/logger'
+
+const logger = createLogger('totp-verify')
 
 interface TotpVerifyBody {
   code: string
@@ -44,14 +47,12 @@ const getVerificationIdByPassword = async (event: H3Event, password: string): Pr
       body: { password }
     })
 
-    console.log('Password verification response:', JSON.stringify(result, null, 2))
-
     // Logto returns the verification record ID as 'verificationRecordId'
     const typedResult = result as Record<string, unknown>
     const verificationId = typedResult.verificationRecordId as string | undefined
 
     if (!verificationId) {
-      console.error('No verificationId found in response. Available keys:', Object.keys(typedResult))
+      logger.error({ keys: Object.keys(typedResult) }, 'No verificationId found in response')
       throw createError({
         statusCode: 500,
         message: 'Password verification succeeded but no verification ID returned',
@@ -62,7 +63,9 @@ const getVerificationIdByPassword = async (event: H3Event, password: string): Pr
     return verificationId
   } catch (e: unknown) {
     const error = e as LogtoErrorResponse
-    console.error('Password verification failed:', error.response?.status, error.response?._data)
+    logError(logger, error, 'Password verification failed', {
+      status: error.response?.status
+    })
     throw createError({
       statusCode: error.response?.status || 500,
       message: error.response?._data?.message || 'Password verification failed',
@@ -74,16 +77,6 @@ const getVerificationIdByPassword = async (event: H3Event, password: string): Pr
 export default defineEventHandler(async (event) => {
   const body = await readBody<TotpVerifyBody & { password?: string }>(event)
   const { code, secret, verificationId, password } = body
-
-  console.log('TOTP verify request received:', {
-    hasCode: !!code,
-    codeLength: code?.length,
-    hasSecret: !!secret,
-    secretLength: secret?.length,
-    secretPreview: secret?.substring(0, 5) + '...' + secret?.substring(secret.length - 3),
-    hasVerificationId: !!verificationId,
-    hasPassword: !!password
-  })
 
   if (!code) {
     throw createError({
@@ -97,25 +90,13 @@ export default defineEventHandler(async (event) => {
   // If no verificationId provided but we have password, get verificationId from password verification
   if (!effectiveVerificationId && password) {
     effectiveVerificationId = await getVerificationIdByPassword(event, password)
-    console.log('Got verificationId from password verification:', effectiveVerificationId?.substring(0, 20))
+    logger.debug('Got verificationId from password verification')
   }
-
-  console.log('After password verification:', {
-    effectiveVerificationId: effectiveVerificationId?.substring(0, 20),
-    secret: secret?.substring(0, 10),
-    code: code?.substring(0, 3)
-  })
 
   // Try to bind TOTP with verificationId using my-account API with user's access token
   // This requires the 'identity' scope which is requested in nuxt.config.ts
   if (effectiveVerificationId && secret) {
     try {
-      console.log('Attempting to bind TOTP via my-account API:', {
-        hasVerificationId: !!effectiveVerificationId,
-        hasSecret: !!secret,
-        hasCode: !!code
-      })
-
       const client = event.context.logtoClient as { getAccessToken: () => Promise<string> } | undefined
       if (!client) {
         throw createError({
@@ -138,16 +119,19 @@ export default defineEventHandler(async (event) => {
         body: { type: 'Totp', secret }
       })
 
-      console.log('TOTP bind successful via my-account API:', JSON.stringify(result))
+      logger.info('TOTP bound successfully via my-account API')
       return result
     } catch (e: unknown) {
       const error = e as LogtoErrorResponse
-      console.error('Bind endpoint failed:', error.response?.status, error.response?._data)
+      logError(logger, error, 'Bind endpoint failed', {
+        status: error.response?.status,
+        code: error.response?._data?.code
+      })
 
       // If 401, fallback to local TOTP verification
       // This happens when the access token doesn't have 'identity' scope
       if (error.response?.status === 401) {
-        console.log('Falling back to local TOTP verification')
+        logger.warn('Falling back to local TOTP verification (identity scope may be missing)')
 
         // Verify the TOTP code locally using otplib with crypto plugins
         // Use a wider time window (±1 step) to account for clock drift
@@ -166,23 +150,20 @@ export default defineEventHandler(async (event) => {
           const epoch = currentTime + (delta * 30)
           try {
             const result = await totp.verify(code, { epoch })
-            console.log(`TOTP verify attempt (delta=${delta}):`, result)
             if (result.valid) {
               isValid = true
               break
             }
-          } catch (e) {
-            console.log(`TOTP verify error (delta=${delta}):`, e)
+          } catch {
+            // Continue to next time step
           }
         }
-
-        console.log('Local TOTP verification result:', isValid)
 
         if (isValid) {
           // Code is valid - user has correctly scanned the QR
           // Note: This doesn't bind TOTP in Logto, but verifies the user set up their app correctly
           // For full Logto integration, the 'identity' scope must be enabled in Logto Console
-          console.log('TOTP code verified successfully (local verification only)')
+          logger.warn('TOTP code verified locally only - not bound in Logto')
           return {
             success: true,
             verified: true,
