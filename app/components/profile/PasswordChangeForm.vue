@@ -44,6 +44,7 @@ const strengthText = computed(() => {
   if (strengthScore.value === 3) return t('profile.passwordStrength.medium')
   return t('profile.passwordStrength.strong')
 })
+const strengthPercent = computed(() => (strengthScore.value / 4) * 100)
 
 const schema = computed(() => z.object({
   currentPassword: z.string().min(1, t('validation.currentPasswordRequired')),
@@ -71,19 +72,12 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   } catch (e: unknown) {
     clientLogger.error('profile', 'Password change failed', e)
     const serverError = e as ServerError
-    const errorData = serverError?.data?.data // server createError puts our data here
+    const errorData = serverError?.data?.data
     const { title, description } = resolvePasswordError(errorData)
     toast.add({ title, description, color: 'error' })
   }
 }
 
-/**
- * Resolve a password change error into specific i18n title + description.
- * The server sends { errorType, code, subCodes } where:
- * - errorType: 'verification' (wrong current password) or 'password_update' (policy failure)
- * - code: normalized Logto code (dots → __)
- * - subCodes: array of normalized specific rejection reasons
- */
 function resolvePasswordError(errorData?: PasswordErrorData): { title: string, description: string } {
   if (!errorData) {
     return {
@@ -94,7 +88,6 @@ function resolvePasswordError(errorData?: PasswordErrorData): { title: string, d
 
   const { errorType, code, subCodes } = errorData
 
-  // Wrong current password
   if (errorType === 'verification') {
     return {
       title: t('profile.errors.changePassword'),
@@ -102,7 +95,6 @@ function resolvePasswordError(errorData?: PasswordErrorData): { title: string, d
     }
   }
 
-  // Password policy rejection — try subCodes first (most specific)
   if (errorType === 'password_update') {
     if (Array.isArray(subCodes) && subCodes.length > 0) {
       const messages = subCodes
@@ -116,7 +108,6 @@ function resolvePasswordError(errorData?: PasswordErrorData): { title: string, d
         }
       }
     }
-    // Fall back to main code
     if (code) {
       const msg = tryLogtoKey(code)
       if (msg) {
@@ -128,14 +119,12 @@ function resolvePasswordError(errorData?: PasswordErrorData): { title: string, d
     }
   }
 
-  // Generic fallback
   return {
     title: t('profile.errors.changePassword'),
     description: t('profile.errors.logto.unknown')
   }
 }
 
-/** Try to find a translated message for a normalized Logto error code */
 function tryLogtoKey(code: string | undefined): string | null {
   if (!code) return null
   const key = `profile.errors.logto.${code}`
@@ -145,122 +134,134 @@ function tryLogtoKey(code: string | undefined): string | null {
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <h3 class="text-lg font-semibold">
-        {{ t('profile.changePassword') }}
-      </h3>
-      <p class="text-sm text-gray-500">
-        {{ t('profile.passwordDescription') }}
-      </p>
-    </template>
-
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
     <UForm
       :schema="schema"
       :state="passwordState"
-      class="space-y-4"
       @submit="onSubmit"
     >
-      <UFormField
-        :label="t('profile.currentPassword')"
-        name="currentPassword"
-      >
-        <UInput
-          v-model="passwordState.currentPassword"
-          :type="currentPasswordVisibility.type.value"
-          icon="i-lucide-lock"
-          :ui="{ trailing: 'pe-1' }"
-          class="w-full"
+      <!-- Section Header -->
+      <div class="p-4 sm:p-6 space-y-4">
+        <div class="flex items-center gap-2">
+          <UIcon name="i-lucide-key-round" class="size-5 text-amber-500" />
+          <h3 class="font-medium text-gray-900 dark:text-white">
+            {{ t('profile.changePassword') }}
+          </h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Current Password -->
+          <UFormField
+            :label="t('profile.currentPassword')"
+            name="currentPassword"
+            required
+          >
+            <UInput
+              v-model="passwordState.currentPassword"
+              :type="currentPasswordVisibility.type.value"
+              icon="i-lucide-lock"
+              :ui="{ trailing: 'pe-1' }"
+              class="w-full"
+            >
+              <template #trailing>
+                <UButton
+                  color="neutral"
+                  variant="ghost"
+                  size="xs"
+                  :icon="currentPasswordVisibility.icon.value"
+                  :aria-label="currentPasswordVisibility.ariaLabel.value"
+                  @click="currentPasswordVisibility.toggle"
+                />
+              </template>
+            </UInput>
+          </UFormField>
+
+          <!-- New Password -->
+          <UFormField
+            :label="t('profile.newPassword')"
+            name="password"
+            required
+          >
+            <UInput
+              v-model="passwordState.password"
+              :type="newPasswordVisibility.type.value"
+              :color="strengthColor"
+              icon="i-lucide-shield"
+              :ui="{ trailing: 'pe-1' }"
+              class="w-full"
+            >
+              <template #trailing>
+                <UButton
+                  color="neutral"
+                  variant="ghost"
+                  size="xs"
+                  :icon="newPasswordVisibility.icon.value"
+                  :aria-label="newPasswordVisibility.ariaLabel.value"
+                  @click="newPasswordVisibility.toggle"
+                />
+              </template>
+            </UInput>
+          </UFormField>
+        </div>
+
+        <!-- Strength Indicator -->
+        <div
+          v-if="passwordState.password"
+          class="space-y-3 pt-2"
         >
-          <template #trailing>
-            <UButton
-              color="neutral"
-              variant="link"
-              size="sm"
-              :icon="currentPasswordVisibility.icon.value"
-              :aria-label="currentPasswordVisibility.ariaLabel.value"
-              :aria-pressed="currentPasswordVisibility.visible.value"
-              @click="currentPasswordVisibility.toggle"
-            />
-          </template>
-        </UInput>
-      </UFormField>
-
-      <UFormField
-        :label="t('profile.newPassword')"
-        name="password"
-      >
-        <div class="space-y-2 w-full">
-          <UInput
-            v-model="passwordState.password"
-            :type="newPasswordVisibility.type.value"
-            :color="strengthColor"
-            icon="i-lucide-lock"
-            :aria-invalid="strengthScore < 4"
-            aria-describedby="password-strength"
-            :ui="{ trailing: 'pe-1' }"
-            class="w-full"
-          >
-            <template #trailing>
-              <UButton
-                color="neutral"
-                variant="link"
-                size="sm"
-                :icon="newPasswordVisibility.icon.value"
-                :aria-label="newPasswordVisibility.ariaLabel.value"
-                :aria-pressed="newPasswordVisibility.visible.value"
-                @click="newPasswordVisibility.toggle"
+          <!-- Progress Bar -->
+          <div class="flex items-center gap-3">
+            <div class="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div
+                class="h-full transition-all duration-300 rounded-full"
+                :class="{
+                  'bg-error-500': strengthScore <= 1,
+                  'bg-warning-500': strengthScore === 2 || strengthScore === 3,
+                  'bg-success-500': strengthScore === 4
+                }"
+                :style="{ width: `${strengthPercent}%` }"
               />
-            </template>
-          </UInput>
+            </div>
+            <span
+              class="text-xs font-medium whitespace-nowrap"
+              :class="{
+                'text-error-500': strengthScore <= 1,
+                'text-warning-500': strengthScore === 2 || strengthScore === 3,
+                'text-success-500': strengthScore === 4
+              }"
+            >
+              {{ strengthText }}
+            </span>
+          </div>
 
-          <UProgress
-            :color="strengthColor"
-            :indicator="strengthText"
-            :model-value="strengthScore"
-            :max="4"
-            size="sm"
-          />
-
-          <p
-            id="password-strength"
-            class="text-sm font-medium"
-          >
-            {{ strengthText }}. {{ t('profile.passwordStrength.mustContain') }}
-          </p>
-          <ul
-            class="space-y-1"
-            aria-label="Password requirements"
-          >
-            <li
+          <!-- Requirements Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div
               v-for="(req, index) in strength"
               :key="index"
-              class="flex items-center gap-1"
-              :class="req.met ? 'text-success' : 'text-muted'"
+              class="flex items-center gap-1.5 text-xs"
+              :class="req.met ? 'text-success-600 dark:text-success-400' : 'text-gray-400'"
             >
               <UIcon
-                :name="req.met ? 'i-lucide-circle-check' : 'i-lucide-circle-x'"
-                class="size-4 shrink-0"
+                :name="req.met ? 'i-lucide-check-circle' : 'i-lucide-circle'"
+                class="size-3.5"
               />
-              <span class="text-xs font-light">
-                {{ req.text }}
-                <span class="sr-only">
-                  {{ req.met ? t('profile.passwordStrength.met') : t('profile.passwordStrength.notMet') }}
-                </span>
-              </span>
-            </li>
-          </ul>
+              {{ req.text }}
+            </div>
+          </div>
         </div>
-      </UFormField>
+      </div>
 
-      <div class="flex justify-end">
+      <!-- Footer Actions -->
+      <div class="px-4 sm:px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex justify-end">
         <UButton
           type="submit"
           :loading="loading"
         >
+          <UIcon name="i-lucide-key-round" class="size-4 mr-1.5" />
           {{ t('profile.updatePassword') }}
         </UButton>
       </div>
     </UForm>
-  </UCard>
+  </div>
 </template>

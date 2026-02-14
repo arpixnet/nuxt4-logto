@@ -56,86 +56,96 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <h3 class="text-lg font-semibold">
-        {{ t('profile.profileInfo') }}
-      </h3>
-    </template>
+  <div class="space-y-4">
+    <!-- Section Header -->
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+      {{ t('profile.profileInfo') }}
+    </h2>
 
-    <UForm
-      :schema="schema"
-      :state="formState"
-      class="space-y-4"
-      @submit="onSubmit"
-    >
-      <UFormField
-        :label="t('profile.email')"
-        name="email"
+    <!-- Form Card -->
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
+      <UForm
+        :schema="schema"
+        :state="formState"
+        @submit="onSubmit"
       >
-        <UInput
-          v-model="formState.email"
-          disabled
-          icon="i-heroicons-envelope"
-          class="w-full"
-        />
-        <p class="text-xs text-gray-500 mt-1">
-          {{ t('profile.emailNotChangeable') }}
-        </p>
-      </UFormField>
+        <div class="p-4 sm:p-6 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Name -->
+            <UFormField
+              :label="t('common.user')"
+              name="name"
+              required
+            >
+              <UInput
+                v-model="formState.name"
+                icon="i-lucide-user"
+                class="w-full"
+              />
+            </UFormField>
 
-      <UFormField
-        :label="t('profile.username')"
-        name="username"
-      >
-        <UInput
-          v-model="formState.username"
-          icon="i-heroicons-user"
-          class="w-full"
-        />
-      </UFormField>
+            <!-- Username -->
+            <UFormField
+              :label="t('profile.username')"
+              name="username"
+            >
+              <UInput
+                v-model="formState.username"
+                icon="i-lucide-at-sign"
+                class="w-full"
+              />
+            </UFormField>
 
-      <UFormField
-        :label="t('common.user')"
-        name="name"
-      >
-        <UInput
-          v-model="formState.name"
-          icon="i-heroicons-identification"
-          class="w-full"
-        />
-      </UFormField>
+            <!-- Email (disabled) -->
+            <UFormField
+              :label="t('profile.email')"
+              name="email"
+            >
+              <UInput
+                v-model="formState.email"
+                disabled
+                icon="i-lucide-mail"
+                class="w-full"
+              />
+            </UFormField>
 
-      <UFormField
-        :label="t('profile.phone')"
-        name="phone"
-      >
-        <UInput
-          v-model="formState.phone"
-          icon="i-heroicons-phone"
-          class="w-full"
-        />
-      </UFormField>
+            <!-- Phone -->
+            <UFormField
+              :label="t('profile.phone')"
+              name="phone"
+            >
+              <UInput
+                v-model="formState.phone"
+                icon="i-lucide-phone"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
 
-      <UFormField
-        :label="t('profile.address')"
-        name="address"
-      >
-        <UInput
-          v-model="formState.address"
-          icon="i-heroicons-map-pin"
-          class="w-full"
-        />
-      </UFormField>
+          <!-- Address (full width) -->
+          <UFormField
+            :label="t('profile.address')"
+            name="address"
+          >
+            <UInput
+              v-model="formState.address"
+              icon="i-lucide-map-pin"
+              class="w-full"
+            />
+          </UFormField>
+        </div>
 
-      <div class="flex justify-end">
-        <UButton
-          type="submit"
-          :loading="loading"
-        >
-          {{ t('profile.saveChanges') }}
-        </UButton>
-      </div>
-    </UForm>
-  </UCard>
+        <!-- Footer Actions -->
+        <div class="px-4 sm:px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+          <UButton
+            type="submit"
+            :loading="loading"
+          >
+            <UIcon name="i-lucide-save" class="size-4 mr-1.5" />
+            {{ t('profile.saveChanges') }}
+          </UButton>
+        </div>
+      </UForm>
+    </div>
+  </div>
 </template>
