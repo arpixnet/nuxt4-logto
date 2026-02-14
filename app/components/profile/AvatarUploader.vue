@@ -1,20 +1,22 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const toast = useToast()
-const { refresh } = useAuthSession()
+const { updateAvatarUrl } = useAuthSession()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const isHovering = ref(false)
 
 const { uploading, previewUrl, handleFileChange, reset } = useAvatarUpload({
-  onSuccess: async () => {
+  onSuccess: (result) => {
+    // Update avatar locally without page refresh
+    if (result.avatarUrl) {
+      updateAvatarUrl(result.avatarUrl)
+    }
+
     toast.add({
       title: t('profile.toasts.avatarUpdated'),
       color: 'success'
     })
-
-    // Refresh session to get updated avatar
-    await refresh()
 
     // Reset state
     reset()

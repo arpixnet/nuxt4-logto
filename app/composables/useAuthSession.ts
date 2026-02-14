@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { UserInfoResponse } from '@logto/nuxt'
 import type { UserCustomData } from '#shared/types/user-custom-data'
 
@@ -10,7 +10,7 @@ import type { UserCustomData } from '#shared/types/user-custom-data'
  *
  * Usage:
  * ```ts
- * const { isAuthenticated, session, refresh } = useAuthSession()
+ * const { isAuthenticated, session, updateAvatarUrl } = useAuthSession()
  * ```
  */
 
@@ -29,38 +29,63 @@ export interface AuthSession {
   user: LogtoUser
 }
 
+// Global override for avatar URL (used after upload without page refresh)
+const avatarUrlOverride = ref<string | null>(null)
+
 /**
  * Get the current authentication state from Logto.
  *
  * This composable wraps Logto's useLogtoUser to provide a consistent
  * interface for authentication state management.
  *
- * @returns Object containing authentication status, session, and refresh method
+ * @returns Object containing authentication status, session, and update methods
  */
 export function useAuthSession() {
   // Get user from Logto - returns UserInfoResponse | undefined
-  const user = useLogtoUser() as LogtoUser | undefined
+  const logtoUser = useLogtoUser() as LogtoUser | undefined
 
   // Authentication status
-  const isAuthenticated = computed<boolean>(() => Boolean(user))
+  const isAuthenticated = computed<boolean>(() => Boolean(logtoUser))
 
-  // Session object
+  // Session object with avatar override support
   const session = computed<AuthSession | null>(() => {
-    return user ? { user } : null
+    if (!logtoUser) return null
+
+    // If we have an avatar override, merge it into custom_data
+    if (avatarUrlOverride.value) {
+      return {
+        user: {
+          ...logtoUser,
+          custom_data: {
+            ...(logtoUser.custom_data || {}),
+            avatarUrl: avatarUrlOverride.value
+          }
+        }
+      }
+    }
+
+    return { user: logtoUser }
   })
 
   /**
-   * Refresh the user session by reloading the page.
-   * This is needed after updating user data (like avatar) to fetch fresh data from Logto.
+   * Update avatar URL locally without page refresh.
+   * Call this after successfully uploading a new avatar.
    */
-  async function refresh() {
-    // Reload the page to get fresh user data from Logto
-    window.location.reload()
+  function updateAvatarUrl(url: string) {
+    avatarUrlOverride.value = url
+  }
+
+  /**
+   * Clear the avatar override (useful for logout or reset)
+   */
+  function clearAvatarOverride() {
+    avatarUrlOverride.value = null
   }
 
   return {
     isAuthenticated,
     session,
-    refresh
+    updateAvatarUrl,
+    clearAvatarOverride
   }
 }
