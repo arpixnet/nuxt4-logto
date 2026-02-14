@@ -154,7 +154,8 @@
       "passwordChanged": "Contraseña cambiada exitosamente",
       "twoFactorEnabled": "¡Autenticación de dos factores activada exitosamente!",
       "twoFactorDisabled": "Autenticación de dos factores desactivada",
-      "accountDeleted": "Tu cuenta ha sido eliminada exitosamente. Adiós."
+      "accountDeleted": "Tu cuenta ha sido eliminada exitosamente. Adiós.",
+      "avatarUpdated": "Avatar actualizado exitosamente"
     },
     "errors": {
       "updateProfile": "Fallo al actualizar perfil",
@@ -162,6 +163,7 @@
       "incorrectCurrentPassword": "La contraseña actual que ingresaste es incorrecta.",
       "verificationFailed": "Verificación fallida",
       "serverError": "Ocurrió un error en el servidor. Por favor intenta más tarde.",
+      "avatarUpload": "Error al subir el avatar",
       "logto": {
         "password__rejected": "La contraseña no cumple con los requisitos.",
         "password_rejected__too_short": "La contraseña es muy corta. Debe tener al menos 8 caracteres.",

@@ -154,7 +154,8 @@
       "passwordChanged": "Password changed successfully",
       "twoFactorEnabled": "Two-Factor Authentication enabled successfully!",
       "twoFactorDisabled": "Two-Factor Authentication disabled",
-      "accountDeleted": "Your account has been successfully deleted. Goodbye."
+      "accountDeleted": "Your account has been successfully deleted. Goodbye.",
+      "avatarUpdated": "Avatar updated successfully"
     },
     "errors": {
       "updateProfile": "Failed to update profile",
@@ -162,6 +163,7 @@
       "incorrectCurrentPassword": "The current password you entered is incorrect.",
       "verificationFailed": "Verification failed",
       "serverError": "A server error occurred. Please try again later.",
+      "avatarUpload": "Failed to upload avatar",
       "logto": {
         "password__rejected": "Password does not meet the requirements.",
         "password_rejected__too_short": "Password is too short. It must be at least 8 characters.",

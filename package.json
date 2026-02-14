@@ -11,6 +11,7 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.990.0",
     "@aws-sdk/client-sesv2": "^3.986.0",
     "@chenfengyuan/vue-qrcode": "^2.0.0",
     "@iconify-json/lucide": "^1.2.89",

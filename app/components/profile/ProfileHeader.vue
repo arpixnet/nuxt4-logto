@@ -6,15 +6,12 @@ const user = computed(() => session.value?.user)
 </script>
 
 <template>
-  <div class="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary-500/5 to-primary-400/10 dark:from-primary-500/10 dark:to-primary-400/5 border border-primary-500/10">
+  <div class="relative overflow-hidden rounded-xl bg-linear-to-r from-primary-500/5 to-primary-400/10 dark:from-primary-500/10 dark:to-primary-400/5 border border-primary-500/10">
     <div class="relative px-4 py-5 sm:px-6 sm:py-6">
       <div class="flex items-center gap-4 sm:gap-5">
-        <!-- Avatar -->
+        <!-- Avatar with upload capability -->
         <div class="relative shrink-0">
-          <UiUserAvatar
-            size="lg"
-            show-status
-          />
+          <ProfileAvatarUploader />
         </div>
 
         <!-- User info -->
@@ -23,7 +20,10 @@ const user = computed(() => session.value?.user)
             {{ user?.name || t('profile.title') }}
           </h1>
           <p class="text-sm text-gray-500 dark:text-gray-400 truncate flex items-center gap-1.5">
-            <UIcon name="i-lucide-mail" class="size-3.5 shrink-0" />
+            <UIcon
+              name="i-lucide-mail"
+              class="size-3.5 shrink-0"
+            />
             {{ user?.email }}
           </p>
           <div class="mt-2 flex flex-wrap items-center gap-1.5">
@@ -32,7 +32,10 @@ const user = computed(() => session.value?.user)
               variant="subtle"
               size="xs"
             >
-              <UIcon name="i-lucide-check" class="size-3 mr-1" />
+              <UIcon
+                name="i-lucide-check"
+                class="size-3 mr-1"
+              />
               {{ t('profile.verified') }}
             </UBadge>
             <UBadge

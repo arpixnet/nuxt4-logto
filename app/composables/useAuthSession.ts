@@ -10,7 +10,7 @@ import type { UserCustomData } from '#shared/types/user-custom-data'
  *
  * Usage:
  * ```ts
- * const { isAuthenticated, session } = useAuthSession()
+ * const { isAuthenticated, session, refresh } = useAuthSession()
  * ```
  */
 
@@ -35,7 +35,7 @@ export interface AuthSession {
  * This composable wraps Logto's useLogtoUser to provide a consistent
  * interface for authentication state management.
  *
- * @returns Object containing authentication status and session
+ * @returns Object containing authentication status, session, and refresh method
  */
 export function useAuthSession() {
   // Get user from Logto - returns UserInfoResponse | undefined
@@ -49,8 +49,18 @@ export function useAuthSession() {
     return user ? { user } : null
   })
 
+  /**
+   * Refresh the user session by reloading the page.
+   * This is needed after updating user data (like avatar) to fetch fresh data from Logto.
+   */
+  async function refresh() {
+    // Reload the page to get fresh user data from Logto
+    window.location.reload()
+  }
+
   return {
     isAuthenticated,
-    session
+    session,
+    refresh
   }
 }

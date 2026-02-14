@@ -10,6 +10,8 @@
 export interface UserCustomData {
   address?: string
   birthDate?: string
+  /** Custom avatar URL (uploaded via our system) - takes precedence over picture field */
+  avatarUrl?: string
   // Add more custom fields here as needed
   [key: string]: unknown
 }

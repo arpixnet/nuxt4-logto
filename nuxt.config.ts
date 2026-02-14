@@ -30,7 +30,15 @@ export default defineNuxtConfig({
       appName: process.env.APP_NAME || 'Arpix Solutions'
     },
     // Token for Logto HTTP email connector authentication
-    logtoEmailAuthToken: process.env.LOGTO_EMAIL_AUTH_TOKEN
+    logtoEmailAuthToken: process.env.LOGTO_EMAIL_AUTH_TOKEN,
+    // Minio configuration
+    minioRootUser: process.env.MINIO_ROOT_USER,
+    minioRootPassword: process.env.MINIO_ROOT_PASSWORD,
+    minioBucketName: process.env.MINIO_BUCKET_NAME,
+    minioUser: process.env.MINIO_USER,
+    minioPassword: process.env.MINIO_PASSWORD,
+    minioAccessKey: process.env.MINIO_ACCESS_KEY,
+    minioSecretKey: process.env.MINIO_SECRET_KEY
   },
 
   routeRules: {
