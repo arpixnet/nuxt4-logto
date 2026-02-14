@@ -17,7 +17,10 @@ const isDeleteModalOpen = ref(false)
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             <div class="flex items-center justify-center size-9 rounded-lg bg-error-500/10 dark:bg-error-500/20 shrink-0">
-              <UIcon name="i-lucide-trash-2" class="size-5 text-error-500" />
+              <UIcon
+                name="i-lucide-trash-2"
+                class="size-5 text-error-500"
+              />
             </div>
             <div>
               <h3 class="font-medium text-gray-900 dark:text-white">
@@ -36,7 +39,10 @@ const isDeleteModalOpen = ref(false)
             class="shrink-0 self-end sm:self-auto"
             @click="isDeleteModalOpen = true"
           >
-            <UIcon name="i-lucide-trash-2" class="size-4 mr-1.5" />
+            <UIcon
+              name="i-lucide-trash-2"
+              class="size-4 mr-1.5"
+            />
             {{ t('profile.dangerZone.deleteAccount') }}
           </UButton>
         </div>
