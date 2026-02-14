@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadBucketCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { mkdir, writeFile, readFile, unlink } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
@@ -248,9 +248,7 @@ export async function deleteFile(filename: string): Promise<boolean> {
   const minioAvailable = await isMinIOAvailable()
 
   if (minioAvailable) {
-    // For now, we don't delete from MinIO (could be implemented later)
-    // We just return true as the new file will overwrite
-    return true
+    return deleteFromMinio(filename)
   }
 
   // Delete from local
@@ -261,6 +259,41 @@ export async function deleteFile(filename: string): Promise<boolean> {
   }
 
   return false
+}
+
+/**
+ * Delete file from MinIO
+ */
+async function deleteFromMinio(filename: string): Promise<boolean> {
+  const client = createS3Client()
+  const config = getStorageConfig()
+
+  if (!client || !config.bucket) {
+    return false
+  }
+
+  try {
+    const key = `avatars/${filename}`
+    await client.send(new DeleteObjectCommand({
+      Bucket: config.bucket,
+      Key: key
+    }))
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Extract filename from avatar URL
+ * @param url - Full avatar URL or API path
+ */
+export function extractFilenameFromUrl(url: string): string | null {
+  // Handle both full URLs and API paths
+  // e.g., "http://localhost:3000/api/avatar/file/abc-123.webp" -> "abc-123.webp"
+  // e.g., "/api/avatar/file/abc-123.webp" -> "abc-123.webp"
+  const match = url.match(/\/api\/avatar\/file\/([^/?]+)/)
+  return match ? match[1] : null
 }
 
 /**

@@ -1,6 +1,6 @@
 import { getLogtoClient, getLogtoEndpoint } from '../../utils/logto-proxy'
 import type { LogtoUserInfo } from '../../types/logto'
-import { uploadFile, generateAvatarFilename } from '../../utils/storage'
+import { uploadFile, generateAvatarFilename, deleteFile, extractFilenameFromUrl } from '../../utils/storage'
 import { createLogger, logError } from '../../utils/logger'
 
 const logger = createLogger('avatar-upload')
@@ -78,6 +78,27 @@ export default defineEventHandler(async (event) => {
 
     logger.info({ userId, mimetype, size: fileBuffer.length }, 'Processing avatar upload')
 
+    // Get current custom_data to check for existing avatar
+    const currentUser = await $fetch(`${logtoEndpoint}/api/my-account`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    })
+
+    const currentCustomData = (currentUser as { customData?: Record<string, unknown> })?.customData || {}
+    const currentAvatarUrl = currentCustomData.avatarUrl as string | undefined
+
+    // Delete old avatar if it exists and is stored in our system
+    if (currentAvatarUrl) {
+      const oldFilename = extractFilenameFromUrl(currentAvatarUrl)
+      if (oldFilename) {
+        const deleted = await deleteFile(oldFilename)
+        if (deleted) {
+          logger.info({ userId, oldFilename }, 'Deleted old avatar')
+        }
+      }
+    }
+
     // Get file extension from mimetype
     const extensions: Record<string, string> = {
       'image/jpeg': 'jpg',
@@ -104,16 +125,7 @@ export default defineEventHandler(async (event) => {
 
     logger.info({ userId, avatarUrl, storage: uploadResult.storage }, 'Avatar uploaded')
 
-    // Get current custom_data to preserve existing fields
-    const currentUser = await $fetch(`${logtoEndpoint}/api/my-account`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    })
-
-    const currentCustomData = (currentUser as { customData?: Record<string, unknown> })?.customData || {}
-
-    // Update user customData with avatar URL (Logto doesn't allow direct picture updates)
+    // Update user customData with new avatar URL
     await $fetch(`${logtoEndpoint}/api/my-account`, {
       method: 'PATCH',
       headers: {
