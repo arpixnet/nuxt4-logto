@@ -28,7 +28,9 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       appName: process.env.APP_NAME || 'Arpix Solutions'
-    }
+    },
+    // Token for Logto HTTP email connector authentication
+    logtoEmailAuthToken: process.env.LOGTO_EMAIL_AUTH_TOKEN
   },
 
   routeRules: {
@@ -41,13 +43,13 @@ export default defineNuxtConfig({
     transport: 'smtp',
     defaultFrom: process.env.EMAIL_FROM || '"Your App" <noreply@yourdomain.com>',
     smtp: {
-      service: 'gmail',
+      service: 'smtp',
+      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      port: process.env.EMAIL_PORT || 587,
+      secure: process.env.EMAIL_SECURE === 'true',
       auth: {
-        type: 'OAuth2',
         user: process.env.EMAIL_USER || 'info@yourdomain.com',
-        clientId: process.env.GMAIL_CLIENT_ID || '',
-        clientSecret: process.env.GMAIL_CLIENT_SECRET || '',
-        refreshToken: process.env.GMAIL_REFRESH_TOKEN || ''
+        pass: process.env.EMAIL_PASSWORD || 'your-password'
       }
     },
     templates: {
