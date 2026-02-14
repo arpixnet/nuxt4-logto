@@ -41,7 +41,10 @@ const navItems: NavItem[] = [
       ]"
       @click="activeSection = item.id"
     >
-      <UIcon :name="item.icon" class="size-4 shrink-0" />
+      <UIcon
+        :name="item.icon"
+        class="size-4 shrink-0"
+      />
       <span class="truncate hidden sm:inline">{{ t(item.label) }}</span>
     </button>
   </div>
