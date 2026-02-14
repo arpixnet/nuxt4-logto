@@ -29,7 +29,10 @@ function handleDisableSuccess() {
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
           <div class="flex items-center justify-center size-9 rounded-lg bg-success-500/10 dark:bg-success-500/20">
-            <UIcon name="i-lucide-shield-check" class="size-5 text-success-600 dark:text-success-400" />
+            <UIcon
+              name="i-lucide-shield-check"
+              class="size-5 text-success-600 dark:text-success-400"
+            />
           </div>
           <div>
             <h3 class="font-medium text-gray-900 dark:text-white">
