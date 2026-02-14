@@ -293,7 +293,7 @@ export function extractFilenameFromUrl(url: string): string | null {
   // e.g., "http://localhost:3000/api/avatar/file/abc-123.webp" -> "abc-123.webp"
   // e.g., "/api/avatar/file/abc-123.webp" -> "abc-123.webp"
   const match = url.match(/\/api\/avatar\/file\/([^/?]+)/)
-  return match ? match[1] : null
+  return match?.[1] ?? null
 }
 
 /**
