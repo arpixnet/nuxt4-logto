@@ -143,7 +143,10 @@ function tryLogtoKey(code: string | undefined): string | null {
       <!-- Section Header -->
       <div class="p-4 sm:p-6 space-y-4">
         <div class="flex items-center gap-2">
-          <UIcon name="i-lucide-key-round" class="size-5 text-amber-500" />
+          <UIcon
+            name="i-lucide-key-round"
+            class="size-5 text-amber-500"
+          />
           <h3 class="font-medium text-gray-900 dark:text-white">
             {{ t('profile.changePassword') }}
           </h3>
@@ -258,7 +261,10 @@ function tryLogtoKey(code: string | undefined): string | null {
           type="submit"
           :loading="loading"
         >
-          <UIcon name="i-lucide-key-round" class="size-4 mr-1.5" />
+          <UIcon
+            name="i-lucide-key-round"
+            class="size-4 mr-1.5"
+          />
           {{ t('profile.updatePassword') }}
         </UButton>
       </div>
