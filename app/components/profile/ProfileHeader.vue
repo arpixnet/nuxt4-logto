@@ -3,10 +3,6 @@ const { session } = useAuthSession()
 const { t } = useI18n()
 
 const user = computed(() => session.value?.user)
-const initials = computed(() => {
-  const name = user.value?.name || user.value?.email || ''
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-})
 </script>
 
 <template>
@@ -15,20 +11,10 @@ const initials = computed(() => {
       <div class="flex items-center gap-4 sm:gap-5">
         <!-- Avatar -->
         <div class="relative shrink-0">
-          <UAvatar
-            :src="user?.avatar"
-            :alt="user?.name"
-            size="2xl"
-            class="ring-2 ring-white dark:ring-gray-800 shadow-lg"
-          >
-            <template #fallback>
-              <span class="text-lg font-bold text-primary-600 dark:text-primary-400">
-                {{ initials }}
-              </span>
-            </template>
-          </UAvatar>
-          <!-- Online indicator -->
-          <div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-success-500 rounded-full ring-2 ring-white dark:ring-gray-900" />
+          <UiUserAvatar
+            size="lg"
+            show-status
+          />
         </div>
 
         <!-- User info -->

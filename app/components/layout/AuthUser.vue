@@ -6,18 +6,6 @@ const { t } = useI18n()
 const clientLogger = useClientLogger()
 const user = computed(() => session.value?.user)
 
-const userInitial = computed(() => {
-  if (!user.value?.username) {
-    if (isAuthenticated.value) {
-      clientLogger.warn('auth-user', 'User authenticated but username missing', {
-        userId: user.value?.sub
-      })
-    }
-    return null
-  }
-  return user.value.username.charAt(0).toUpperCase()
-})
-
 const userMenuItems = computed<DropdownMenuItem[]>(() => [
   {
     label: user.value?.username || t('common.user'),
@@ -73,26 +61,6 @@ const userMenuItems = computed<DropdownMenuItem[]>(() => [
     :items="userMenuItems"
     class="flex items-center gap-2"
   >
-    <UAvatar
-      v-if="user?.picture"
-      class="rounded-none squircle"
-      :src="user?.picture"
-      :alt="user?.username || 'User Avatar'"
-    />
-    <div
-      v-else-if="userInitial"
-      class="w-8 h-8 rounded-none squircle bg-slate-200 dark:bg-slate-700 flex justify-center items-center font-bold text-slate-600 dark:text-slate-300"
-    >
-      {{ userInitial }}
-    </div>
-    <div
-      v-else
-      class="w-8 h-8 rounded-none squircle bg-slate-200 dark:bg-slate-700 flex justify-center items-center"
-    >
-      <UIcon
-        name="heroicons:user-20-solid"
-        class="w-5 h-5 text-slate-600 dark:text-slate-300"
-      />
-    </div>
+    <UiUserAvatar size="sm" />
   </UDropdownMenu>
 </template>
