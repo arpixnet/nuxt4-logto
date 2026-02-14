@@ -4,7 +4,7 @@ import type { FormSubmitEvent } from '#ui/types'
 import type { UserCustomData } from '#imports'
 
 const { t } = useI18n()
-const { session } = useAuthSession()
+const { session, updateUserProfile } = useAuthSession()
 const { updateProfile, loading } = useUserProfile()
 const toast = useToast()
 
@@ -24,7 +24,7 @@ const formState = reactive({
   name: props.name || session.value?.user?.name || '',
   username: props.username || session.value?.user?.username || '',
   email: props.email || session.value?.user?.email || '',
-  phone: props.phone || session.value?.user?.phone_number || '',
+  phone: props.phone || (session.value?.user?.custom_data as UserCustomData | undefined)?.phone || '',
   address: props.address || (session.value?.user?.custom_data as UserCustomData | undefined)?.address || ''
 })
 
@@ -44,9 +44,21 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       name: event.data.name,
       username: event.data.username,
       customData: {
-        address: event.data.address
+        address: event.data.address,
+        phone: event.data.phone
       }
     })
+
+    // Update local session state without page refresh
+    updateUserProfile({
+      name: event.data.name,
+      username: event.data.username,
+      custom_data: {
+        address: event.data.address,
+        phone: event.data.phone
+      } as UserCustomData
+    })
+
     toast.add({ title: t('profile.toasts.profileUpdated'), color: 'success' })
     emit('updated')
   } catch {
@@ -141,7 +153,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             type="submit"
             :loading="loading"
           >
-            <UIcon name="i-lucide-save" class="size-4 mr-1.5" />
+            <UIcon
+              name="i-lucide-save"
+              class="size-4 mr-1.5"
+            />
             {{ t('profile.saveChanges') }}
           </UButton>
         </div>

@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, reactive } from 'vue'
 import type { UserInfoResponse } from '@logto/nuxt'
 import type { UserCustomData } from '#shared/types/user-custom-data'
 
@@ -10,7 +10,7 @@ import type { UserCustomData } from '#shared/types/user-custom-data'
  *
  * Usage:
  * ```ts
- * const { isAuthenticated, session, updateAvatarUrl } = useAuthSession()
+ * const { isAuthenticated, session, updateUserProfile, updateAvatar } = useAuthSession()
  * ```
  */
 
@@ -29,8 +29,19 @@ export interface AuthSession {
   user: LogtoUser
 }
 
-// Global override for avatar URL (used after upload without page refresh)
-const avatarUrlOverride = ref<string | null>(null)
+/**
+ * Profile data that can be updated locally
+ */
+interface ProfileOverride {
+  name?: string
+  username?: string
+  phone_number?: string
+  picture?: string
+  custom_data?: UserCustomData
+}
+
+// Global override for user profile data (used after updates without page refresh)
+const profileOverride = reactive<ProfileOverride>({})
 
 /**
  * Get the current authentication state from Logto.
@@ -47,18 +58,27 @@ export function useAuthSession() {
   // Authentication status
   const isAuthenticated = computed<boolean>(() => Boolean(logtoUser))
 
-  // Session object with avatar override support
+  // Check if we have any overrides
+  const hasOverrides = computed(() =>
+    Object.keys(profileOverride).length > 0
+  )
+
+  // Session object with profile override support
   const session = computed<AuthSession | null>(() => {
     if (!logtoUser) return null
 
-    // If we have an avatar override, merge it into custom_data
-    if (avatarUrlOverride.value) {
+    // If we have overrides, merge them into the user object
+    if (hasOverrides.value) {
       return {
         user: {
           ...logtoUser,
+          ...(profileOverride.name !== undefined && { name: profileOverride.name }),
+          ...(profileOverride.username !== undefined && { username: profileOverride.username }),
+          ...(profileOverride.phone_number !== undefined && { phone_number: profileOverride.phone_number }),
+          ...(profileOverride.picture !== undefined && { picture: profileOverride.picture }),
           custom_data: {
             ...(logtoUser.custom_data || {}),
-            avatarUrl: avatarUrlOverride.value
+            ...(profileOverride.custom_data || {})
           }
         }
       }
@@ -71,21 +91,54 @@ export function useAuthSession() {
    * Update avatar URL locally without page refresh.
    * Call this after successfully uploading a new avatar.
    */
-  function updateAvatarUrl(url: string) {
-    avatarUrlOverride.value = url
+  function updateAvatar(url: string) {
+    profileOverride.picture = url
   }
 
   /**
-   * Clear the avatar override (useful for logout or reset)
+   * Update user profile data locally without page refresh.
+   * Call this after successfully updating profile data.
    */
-  function clearAvatarOverride() {
-    avatarUrlOverride.value = null
+  function updateUserProfile(data: {
+    name?: string
+    username?: string
+    phone_number?: string
+    custom_data?: UserCustomData
+  }) {
+    if (data.name !== undefined) {
+      profileOverride.name = data.name
+    }
+    if (data.username !== undefined) {
+      profileOverride.username = data.username
+    }
+    if (data.phone_number !== undefined) {
+      profileOverride.phone_number = data.phone_number
+    }
+    if (data.custom_data !== undefined) {
+      profileOverride.custom_data = {
+        ...profileOverride.custom_data,
+        ...data.custom_data
+      }
+    }
+  }
+
+  /**
+   * Clear all profile overrides (useful for logout or reset)
+   */
+  function clearProfileOverride() {
+    // Using static keys (not computed) is allowed by ESLint
+    delete profileOverride.name
+    delete profileOverride.username
+    delete profileOverride.phone_number
+    delete profileOverride.picture
+    delete profileOverride.custom_data
   }
 
   return {
     isAuthenticated,
     session,
-    updateAvatarUrl,
-    clearAvatarOverride
+    updateAvatar,
+    updateUserProfile,
+    clearProfileOverride
   }
 }

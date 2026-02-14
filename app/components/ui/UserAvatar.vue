@@ -35,11 +35,8 @@ const initials = computed(() => {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 })
 
-// Avatar source - uses avatarUrl from custom_data, fallback to picture from Logto
-const avatarSrc = computed(() => {
-  const customData = user.value?.custom_data as { avatarUrl?: string } | undefined
-  return customData?.avatarUrl || user.value?.picture
-})
+// Avatar source - uses picture from Logto (avatar field in Management API)
+const avatarSrc = computed(() => user.value?.picture)
 
 // Check if avatar is a local API URL (uploaded via our system)
 const isLocalAvatar = computed(() =>

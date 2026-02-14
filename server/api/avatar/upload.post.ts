@@ -78,15 +78,14 @@ export default defineEventHandler(async (event) => {
 
     logger.info({ userId, mimetype, size: fileBuffer.length }, 'Processing avatar upload')
 
-    // Get current custom_data to check for existing avatar
-    const currentUser = await $fetch(`${logtoEndpoint}/api/my-account`, {
+    // Get current user to check for existing avatar
+    const currentUser = await $fetch<{ avatar?: string }>(`${logtoEndpoint}/api/my-account`, {
       headers: {
         Authorization: `Bearer ${accessToken}`
       }
     })
 
-    const currentCustomData = (currentUser as { customData?: Record<string, unknown> })?.customData || {}
-    const currentAvatarUrl = currentCustomData.avatarUrl as string | undefined
+    const currentAvatarUrl = currentUser?.avatar
 
     // Delete old avatar if it exists and is stored in our system
     if (currentAvatarUrl) {
@@ -125,7 +124,7 @@ export default defineEventHandler(async (event) => {
 
     logger.info({ userId, avatarUrl, storage: uploadResult.storage }, 'Avatar uploaded')
 
-    // Update user customData with new avatar URL
+    // Update user avatar field in Logto
     await $fetch(`${logtoEndpoint}/api/my-account`, {
       method: 'PATCH',
       headers: {
@@ -133,14 +132,11 @@ export default defineEventHandler(async (event) => {
         'Content-Type': 'application/json'
       },
       body: {
-        customData: {
-          ...currentCustomData,
-          avatarUrl
-        }
+        avatar: avatarUrl
       }
     })
 
-    logger.info({ userId, avatarUrl }, 'User custom_data updated with avatar URL')
+    logger.info({ userId, avatarUrl }, 'User avatar updated')
 
     return {
       success: true,

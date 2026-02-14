@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const toast = useToast()
-const { updateAvatarUrl } = useAuthSession()
+const { updateAvatar } = useAuthSession()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const isHovering = ref(false)
@@ -10,7 +10,7 @@ const { uploading, previewUrl, handleFileChange, reset } = useAvatarUpload({
   onSuccess: (result) => {
     // Update avatar locally without page refresh
     if (result.avatarUrl) {
-      updateAvatarUrl(result.avatarUrl)
+      updateAvatar(result.avatarUrl)
     }
 
     toast.add({
