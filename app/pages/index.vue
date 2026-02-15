@@ -122,7 +122,7 @@ const features = computed(() => [
       :description="t('seo.home.description')"
       :links="[{
         label: t('seo.home.getStarted'),
-        to: 'https://github.com/arpixnet/nuxt4-logto/README.md',
+        to: 'https://github.com/arpixnet/nuxt4-logto/blob/main/README.md',
         target: '_blank',
         trailingIcon: 'i-lucide-arrow-right',
         size: 'xl'
