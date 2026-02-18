@@ -97,7 +97,7 @@ export class GraphQLClient {
       },
       on: {
         connected: () => this.log('WebSocket connected'),
-        error: (error) => console.error('[GraphQL] WebSocket error:', error),
+        error: error => console.error('[GraphQL] WebSocket error:', error),
         closed: () => this.log('WebSocket connection closed')
       },
       shouldRetry: () => true,
@@ -105,7 +105,7 @@ export class GraphQLClient {
       retryWait: async (retries) => {
         // Exponential backoff: 1s, 2s, 4s, 8s, 16s
         const delay = Math.min(1000 * Math.pow(2, retries), 16000)
-        await new Promise((resolve) => setTimeout(resolve, delay))
+        await new Promise(resolve => setTimeout(resolve, delay))
       }
     })
   }
