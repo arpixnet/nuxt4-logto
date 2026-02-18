@@ -46,10 +46,10 @@ export const mainMenu: AppMenuItem[] = [
         roles: []
       },
       {
-        label: 'Components',
-        description: 'Reusable UI components',
-        icon: 'i-lucide-box',
-        to: '/components',
+        label: 'Sidebar Example',
+        description: 'Sidebar layout example',
+        icon: 'i-lucide-menu',
+        to: '/examples/sidebar',
         roles: []
       },
       {
@@ -182,6 +182,22 @@ export const sidebarMenu: AppMenuItem[] = [
     roles: []
   },
   {
+    label: 'Content',
+    type: 'label'
+  },
+  {
+    label: 'Posts',
+    icon: 'i-lucide-file-text',
+    to: '/admin/posts',
+    roles: []
+  },
+  {
+    label: 'Media',
+    icon: 'i-lucide-image',
+    to: '/admin/media',
+    roles: []
+  },
+  {
     label: 'Management',
     type: 'label',
     roles: ['admin']
@@ -201,8 +217,34 @@ export const sidebarMenu: AppMenuItem[] = [
   {
     label: 'Settings',
     icon: 'i-lucide-settings',
-    to: '/settings',
-    roles: []
+    roles: [],
+    defaultOpen: true,
+    children: [
+      {
+        label: 'General',
+        icon: 'i-lucide-sliders',
+        to: '/settings/general',
+        roles: []
+      },
+      {
+        label: 'Security',
+        icon: 'i-lucide-lock',
+        to: '/settings/security',
+        roles: []
+      },
+      {
+        label: 'Notifications',
+        icon: 'i-lucide-bell',
+        to: '/settings/notifications',
+        roles: []
+      },
+      {
+        label: 'Integrations',
+        icon: 'i-lucide-plug',
+        to: '/settings/integrations',
+        roles: []
+      }
+    ]
   },
   {
     label: 'External',
