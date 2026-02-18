@@ -7,7 +7,6 @@
  *
  * Features:
  * - Role-based filtering (via useMenuConfig)
- * - Responsive (horizontal shows hamburger on mobile)
  * - Submenus support (horizontal and vertical only)
  * - Collapsible sidebar (vertical variant)
  * - External link detection with icon
@@ -23,7 +22,6 @@
  * ```
  */
 
-import { useMediaQuery } from '@vueuse/core'
 import type { NavigationMenuItem } from '@nuxt/ui'
 import type { AppMenuItem, MenuVariant } from './types'
 
@@ -38,8 +36,6 @@ const props = withDefaults(defineProps<{
   showIcons?: boolean
   /** Custom class */
   class?: string
-  /** Mobile breakpoint in pixels */
-  mobileBreakpoint?: number
   /** Number of columns for footer-columns variant (default: 4) */
   columns?: number
 }>(), {
@@ -47,13 +43,11 @@ const props = withDefaults(defineProps<{
   collapsed: false,
   showIcons: undefined,
   class: '',
-  mobileBreakpoint: 1024,
   columns: 4
 })
 
 const { getMenu, getFooterColumns } = useMenuConfig()
 const route = useRoute()
-const isMobile = useMediaQuery(`(max-width: ${props.mobileBreakpoint - 1}px)`)
 
 // Get filtered menu items
 const menuItems = computed(() => getMenu(props.menu))
@@ -154,11 +148,6 @@ const navigationItems = computed<NavigationMenuItem[]>(() => {
     .map(toNavigationMenuItem)
 })
 
-// Determine which component to render based on variant and screen size
-const useMobileView = computed(() => {
-  return props.variant === 'horizontal' && isMobile.value
-})
-
 // Footer items for simple footer variant
 const footerItems = computed(() => {
   if (props.variant !== 'footer') return []
@@ -167,16 +156,8 @@ const footerItems = computed(() => {
 </script>
 
 <template>
-  <!-- Mobile: Use hamburger menu with drawer -->
-  <template v-if="useMobileView">
-    <LayoutMenuAppMenuMobile
-      :items="navigationItems"
-      :class="props.class"
-    />
-  </template>
-
-  <!-- Desktop Horizontal: Full NavigationMenu -->
-  <template v-else-if="variant === 'horizontal'">
+  <!-- Horizontal: Full NavigationMenu -->
+  <template v-if="variant === 'horizontal'">
     <UNavigationMenu
       :items="navigationItems"
       orientation="horizontal"
