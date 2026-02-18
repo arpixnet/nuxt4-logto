@@ -97,47 +97,118 @@ async function searchPosts() {
 }
 
 // ==========================================
-// 3. Mutation Example
+// 3. Create / Edit Post
 // ==========================================
 const newPostTitle = ref('')
 const newPostContent = ref('')
 const creating = ref(false)
+const editingPost = ref<Post | null>(null)
+const showForm = ref(false)
 
-async function createPost() {
+function openCreateForm() {
+  editingPost.value = null
+  newPostTitle.value = ''
+  newPostContent.value = ''
+  showForm.value = true
+}
+
+function openEditForm(post: Post) {
+  editingPost.value = post
+  newPostTitle.value = post.title
+  newPostContent.value = post.content || ''
+  showForm.value = true
+}
+
+function cancelForm() {
+  showForm.value = false
+  editingPost.value = null
+  newPostTitle.value = ''
+  newPostContent.value = ''
+}
+
+async function savePost() {
   if (!newPostTitle.value.trim()) return
 
   creating.value = true
   try {
-    await mutate(`
-      mutation CreatePost($title: String!, $content: String!) {
-        insert_posts_one(object: {
-          title: $title,
-          content: $content
-        }) {
-          id
-          title
+    if (editingPost.value) {
+      // Update existing post
+      await mutate(`
+        mutation UpdatePost($id: uuid!, $title: String!, $content: String!) {
+          update_posts_by_pk(pk_columns: { id: $id }, _set: {
+            title: $title,
+            content: $content
+          }) {
+            id
+            title
+          }
         }
-      }
-    `, {
-      title: newPostTitle.value,
-      content: newPostContent.value
-    })
+      `, {
+        id: editingPost.value.id,
+        title: newPostTitle.value,
+        content: newPostContent.value
+      })
+    } else {
+      // Create new post
+      await mutate(`
+        mutation CreatePost($title: String!, $content: String!) {
+          insert_posts_one(object: {
+            title: $title,
+            content: $content
+          }) {
+            id
+            title
+          }
+        }
+      `, {
+        title: newPostTitle.value,
+        content: newPostContent.value
+      })
+    }
 
     // Reset form
-    newPostTitle.value = ''
-    newPostContent.value = ''
+    cancelForm()
 
     // Refetch posts
     postsQuery.refetch()
   } catch (error) {
-    console.error('Create post failed:', error)
+    console.error('Save post failed:', error)
   } finally {
     creating.value = false
   }
 }
 
 // ==========================================
-// 4. Subscription Example (real-time updates)
+// 4. Delete Post
+// ==========================================
+const deleting = ref<string | null>(null)
+
+async function deletePost(post: Post) {
+  if (!confirm(`Are you sure you want to delete "${post.title}"?`)) {
+    return
+  }
+
+  deleting.value = post.id
+  try {
+    await mutate(`
+      mutation DeletePost($id: uuid!) {
+        delete_posts_by_pk(id: $id) {
+          id
+        }
+      }
+    `, { id: post.id })
+
+    // Refetch posts
+    postsQuery.refetch()
+  } catch (error) {
+    console.error('Delete post failed:', error)
+  } finally {
+    deleting.value = null
+  }
+}
+
+// ==========================================
+// 5. Subscription Example (real-time updates)
 // ==========================================
 const livePostCount = ref(0)
 
@@ -160,7 +231,7 @@ watch(() => postSubscription.data.value, (newData) => {
 }, { immediate: true })
 
 // ==========================================
-// 5. Clear Token (on manual logout)
+// 6. Clear Token (on manual logout)
 // ==========================================
 function handleClearToken() {
   clearToken()
@@ -197,9 +268,18 @@ function handleClearToken() {
 
     <!-- 1. Reactive Query Example -->
     <section>
-      <h2 class="mb-4 text-lg font-semibold">
-        1. Reactive Query (Auto-fetching)
-      </h2>
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-lg font-semibold">
+          1. Posts
+        </h2>
+        <UButton
+          v-if="!showForm"
+          size="sm"
+          @click="openCreateForm"
+        >
+          New Post
+        </UButton>
+      </div>
 
       <div
         v-if="postsQuery.loading.value"
@@ -215,56 +295,128 @@ function handleClearToken() {
         Error: {{ postsQuery.error.value.message }}
       </div>
 
-      <div
-        v-else
-        class="space-y-2"
-      >
-        <p class="text-sm text-gray-500">
-          Found {{ postsQuery.data.value?.posts?.length || 0 }} posts
+      <div v-else>
+        <!-- Post Form (Create/Edit) -->
+        <div
+          v-if="showForm"
+          class="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950"
+        >
+          <h3 class="mb-3 font-medium">
+            {{ editingPost ? 'Edit Post' : 'Create New Post' }}
+          </h3>
+
+          <div class="grid gap-3">
+            <UInput
+              v-model="newPostTitle"
+              placeholder="Post title..."
+              size="lg"
+            />
+            <UTextarea
+              v-model="newPostContent"
+              placeholder="Post content (optional)..."
+              :rows="4"
+            />
+            <div class="flex gap-2">
+              <UButton
+                :loading="creating"
+                :disabled="!newPostTitle.trim()"
+                @click="savePost"
+              >
+                {{ editingPost ? 'Update' : 'Create' }}
+              </UButton>
+              <UButton
+                color="neutral"
+                variant="ghost"
+                @click="cancelForm"
+              >
+                Cancel
+              </UButton>
+            </div>
+          </div>
+        </div>
+
+        <!-- Posts List -->
+        <p
+          v-if="postsQuery.data.value?.posts?.length"
+          class="mb-3 text-sm text-gray-500"
+        >
+          {{ postsQuery.data.value.posts.length }} posts
         </p>
 
         <ul
           v-if="postsQuery.data.value?.posts?.length"
-          class="space-y-2"
+          class="space-y-3"
         >
           <li
             v-for="post in postsQuery.data.value.posts"
             :key="post.id"
-            class="rounded border p-3"
+            class="rounded-lg border p-4 transition-shadow hover:shadow-md"
           >
-            <h3 class="font-medium">
-              {{ post.title }}
-            </h3>
-            <p
-              v-if="post.content"
-              class="mt-1 text-sm text-gray-600"
-            >
-              {{ post.content.slice(0, 100) }}{{ post.content.length > 100 ? '...' : '' }}
-            </p>
-            <p class="mt-1 text-xs text-gray-400">
-              by {{ getAuthorName(post.author_id) }}
-              <span
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <h3 class="truncate font-medium">
+                  {{ post.title }}
+                </h3>
+                <p
+                  v-if="post.content"
+                  class="mt-1 text-sm text-gray-600 dark:text-gray-400"
+                >
+                  {{ post.content.slice(0, 150) }}{{ post.content.length > 150 ? '...' : '' }}
+                </p>
+                <p class="mt-2 text-xs text-gray-400">
+                  by {{ getAuthorName(post.author_id) }}
+                  <span
+                    v-if="isAuthor(post.author_id)"
+                    class="ml-1 font-medium text-green-600"
+                  >
+                    (you)
+                  </span>
+                  <span class="mx-1">·</span>
+                  {{ new Date(post.created_at).toLocaleDateString() }}
+                </p>
+              </div>
+
+              <!-- Action Buttons (only for author) -->
+              <div
                 v-if="isAuthor(post.author_id)"
-                class="ml-1 text-green-600"
+                class="flex shrink-0 gap-1"
               >
-                (you)
-              </span>
-            </p>
+                <UButton
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-lucide-pencil"
+                  @click="openEditForm(post)"
+                />
+                <UButton
+                  size="xs"
+                  color="error"
+                  variant="ghost"
+                  icon="i-lucide-trash-2"
+                  :loading="deleting === post.id"
+                  @click="deletePost(post)"
+                />
+              </div>
+            </div>
           </li>
         </ul>
 
         <p
           v-else
-          class="text-gray-400 italic"
+          class="rounded-lg border-2 border-dashed p-8 text-center text-gray-400"
         >
-          No posts yet. Create one below!
+          No posts yet. Click "New Post" to create one!
         </p>
 
         <UButton
-          size="sm"
+          v-if="postsQuery.data.value?.posts?.length"
+          size="xs"
+          color="neutral"
+          variant="ghost"
+          class="mt-3"
           @click="postsQuery.refetch"
         >
-          Refetch Posts
+          Refresh
         </UButton>
       </div>
     </section>
@@ -272,7 +424,7 @@ function handleClearToken() {
     <!-- 2. Manual Query with Variables -->
     <section>
       <h2 class="mb-4 text-lg font-semibold">
-        2. Search Posts (Manual Query)
+        2. Search Posts
       </h2>
 
       <div class="flex gap-2">
@@ -297,46 +449,20 @@ function handleClearToken() {
         <li
           v-for="post in searchResults"
           :key="post.id"
-          class="rounded border p-2"
+          class="rounded border p-3"
         >
           <span class="font-medium">{{ post.title }}</span>
-          <span class="text-xs text-gray-400 ml-2">
+          <span class="ml-2 text-xs text-gray-400">
             by {{ getAuthorName(post.author_id) }}
           </span>
         </li>
       </ul>
     </section>
 
-    <!-- 3. Mutation Example -->
+    <!-- 3. Subscription Example -->
     <section>
       <h2 class="mb-4 text-lg font-semibold">
-        3. Create Post (Mutation)
-      </h2>
-
-      <div class="space-y-2">
-        <UInput
-          v-model="newPostTitle"
-          placeholder="Post title..."
-        />
-        <UTextarea
-          v-model="newPostContent"
-          placeholder="Post content..."
-          :rows="3"
-        />
-        <UButton
-          :loading="creating"
-          :disabled="!newPostTitle.trim()"
-          @click="createPost"
-        >
-          Create Post
-        </UButton>
-      </div>
-    </section>
-
-    <!-- 4. Subscription Example -->
-    <section>
-      <h2 class="mb-4 text-lg font-semibold">
-        4. Real-time Posts (Subscription)
+        3. Real-time Posts (Subscription)
       </h2>
 
       <div class="flex items-center gap-4">
@@ -387,10 +513,10 @@ function handleClearToken() {
       </p>
     </section>
 
-    <!-- 5. Manual Token Clear -->
+    <!-- 4. Manual Token Clear -->
     <section>
       <h2 class="mb-4 text-lg font-semibold">
-        5. Manual Token Clear
+        4. Manual Token Clear
       </h2>
 
       <p class="mb-2 text-sm text-gray-500">
