@@ -6,11 +6,22 @@
  * Uses AppMenu with variant="vertical" for the sidebar menu.
  */
 
-import { useMediaQuery } from '@vueuse/core'
+import { useMediaQuery, useLocalStorage } from '@vueuse/core'
 
-const isCollapsed = ref(false)
+// Persist sidebar state in localStorage to survive page refreshes and navigation
+const isCollapsed = useLocalStorage('sidebar-collapsed', false)
 const isMobileOpen = ref(false)
 const isMobile = useMediaQuery('(max-width: 1023px)')
+
+// Track if initial hydration is complete to prevent flash
+const isHydrated = ref(false)
+
+onMounted(() => {
+  // Wait for next tick to ensure DOM is ready before enabling transitions
+  nextTick(() => {
+    isHydrated.value = true
+  })
+})
 
 function toggleSidebar() {
   if (isMobile.value) {
@@ -45,8 +56,11 @@ provide('toggleSidebar', toggleSidebar)
     <div class="flex">
       <!-- Desktop Sidebar -->
       <aside
-        class="fixed left-0 top-0 z-30 h-screen border-r bg-white transition-all duration-300 dark:bg-gray-900 dark:border-gray-800 hidden lg:block"
-        :class="isCollapsed ? 'w-16' : 'w-64'"
+        class="fixed left-0 top-0 z-30 h-screen border-r bg-white dark:bg-gray-900 dark:border-gray-800 hidden lg:block"
+        :class="[
+          isCollapsed ? 'w-16' : 'w-64',
+          isHydrated ? 'transition-all duration-300' : ''
+        ]"
       >
         <!-- Sidebar Header -->
         <div
@@ -120,8 +134,11 @@ provide('toggleSidebar', toggleSidebar)
 
       <!-- Main Content -->
       <main
-        class="flex-1 transition-all duration-300"
-        :class="isCollapsed ? 'lg:ml-16' : 'lg:ml-64'"
+        class="flex-1"
+        :class="[
+          isCollapsed ? 'lg:ml-16' : 'lg:ml-64',
+          isHydrated ? 'transition-all duration-300' : ''
+        ]"
       >
         <div class="container mx-auto p-6">
           <slot />
