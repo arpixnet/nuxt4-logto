@@ -16,6 +16,7 @@
 
 const { query, mutate, useQuery, useSubscription, clearToken } = useGraphQLClient()
 const { isAuthenticated, session } = useAuthSession()
+const clientLogger = useClientLogger()
 
 // ==========================================
 // Types (matches Hasura schema)
@@ -90,7 +91,7 @@ async function searchPosts() {
 
     searchResults.value = data.posts || []
   } catch (error) {
-    console.error('Search failed:', error)
+    clientLogger.error('graphql-example', 'Search failed', error)
   } finally {
     searchLoading.value = false
   }
@@ -172,7 +173,7 @@ async function savePost() {
     // Refetch posts
     postsQuery.refetch()
   } catch (error) {
-    console.error('Save post failed:', error)
+    clientLogger.error('graphql-example', 'Save post failed', error)
   } finally {
     creating.value = false
   }
@@ -201,7 +202,7 @@ async function deletePost(post: Post) {
     // Refetch posts
     postsQuery.refetch()
   } catch (error) {
-    console.error('Delete post failed:', error)
+    clientLogger.error('graphql-example', 'Delete post failed', error)
   } finally {
     deleting.value = null
   }
@@ -235,7 +236,6 @@ watch(() => postSubscription.data.value, (newData) => {
 // ==========================================
 function handleClearToken() {
   clearToken()
-  console.log('Token cleared from memory')
 }
 </script>
 

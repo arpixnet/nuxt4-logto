@@ -33,6 +33,9 @@ import { createClient, type Client as WSClient } from 'graphql-ws'
 import type { GraphQLConfig, RequestOptions, SubscriptionHandlers } from './types'
 import { useTokenManager } from './TokenManager'
 
+/** Logger for GraphQL client */
+const getLogger = () => useClientLogger()
+
 export class GraphQLClient {
   /** HTTP client for queries and mutations */
   private httpClient: GQLRequestClient
@@ -97,7 +100,7 @@ export class GraphQLClient {
       },
       on: {
         connected: () => this.log('WebSocket connected'),
-        error: error => console.error('[GraphQL] WebSocket error:', error),
+        error: error => getLogger().error('graphql', 'WebSocket connection error', error),
         closed: () => this.log('WebSocket connection closed')
       },
       shouldRetry: () => true,
@@ -168,7 +171,7 @@ export class GraphQLClient {
 
       return result
     } catch (error) {
-      console.error('[GraphQL] Query error:', error)
+      getLogger().error('graphql', 'Query execution failed', error)
       throw error
     }
   }
@@ -203,7 +206,7 @@ export class GraphQLClient {
     variables?: Record<string, unknown>
   ): () => void {
     if (!this.wsClient) {
-      console.error('[GraphQL] WebSocket client not initialized. Configure wsUrl.')
+      getLogger().warn('graphql', 'WebSocket client not initialized. Configure wsUrl for subscriptions.')
       return () => {}
     }
 
@@ -222,7 +225,7 @@ export class GraphQLClient {
           }
         },
         error: (error) => {
-          console.error('[GraphQL] Subscription error:', error)
+          getLogger().error('graphql', 'Subscription error', error)
           handlers.error?.(error)
         },
         complete: () => {

@@ -15,6 +15,9 @@
 import { jwtDecode } from 'jwt-decode'
 import type { JwtTokenResponse, DecodedToken } from './types'
 
+/** Logger for TokenManager */
+const getLogger = () => useClientLogger()
+
 /** Token endpoint path */
 const TOKEN_ENDPOINT = '/api/auth/jwt'
 
@@ -95,7 +98,7 @@ export class TokenManager {
 
       return null
     } catch (error) {
-      console.error('[TokenManager] Failed to fetch token:', error)
+      getLogger().error('graphql', 'Failed to fetch token', error)
       this.clearToken()
       return null
     }
@@ -115,7 +118,7 @@ export class TokenManager {
         const decoded = jwtDecode<DecodedToken>(token)
         this.expiresAt = decoded.exp || null
       } catch {
-        console.error('[TokenManager] Failed to decode token')
+        getLogger().warn('graphql', 'Failed to decode token expiration, using default')
         this.expiresAt = null
       }
     }
