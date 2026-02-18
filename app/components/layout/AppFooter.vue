@@ -1,7 +1,14 @@
 <template>
+  <UContainer class="mt-4">
+    <!-- Footer Navigation -->
+    <LayoutMenuAppMenu
+      menu="footer"
+      variant="footer-columns"
+    />
+  </UContainer>
   <UFooter>
     <template #left>
-      <p class="text-sm text-muted">
+      <p class="text-sm text-gray-500 dark:text-gray-400">
         Built with Nuxt UI • © {{ new Date().getFullYear() }}
       </p>
     </template>
