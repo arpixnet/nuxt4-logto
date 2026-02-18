@@ -27,7 +27,13 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      appName: process.env.APP_NAME || 'Arpix Solutions'
+      appName: process.env.APP_NAME || 'Arpix Solutions',
+      // GraphQL client configuration
+      graphql: {
+        httpUrl: process.env.NUXT_HASURA_URL || 'http://localhost:8080/v1/graphql',
+        wsUrl: process.env.NUXT_HASURA_WS_URL || 'ws://localhost:8080/v1/graphql',
+        debug: process.env.NODE_ENV === 'development'
+      }
     },
     // Token for Logto HTTP email connector authentication
     logtoEmailAuthToken: process.env.LOGTO_EMAIL_AUTH_TOKEN,
@@ -112,6 +118,9 @@ export default defineNuxtConfig({
       UserScope.OrganizationRoles,
       UserScope.Roles
     ],
+    // API Resource for Hasura - this enables getAccessToken() for Hasura
+    // Must match EXACTLY the API Identifier in Logto Console
+    resources: [process.env.NUXT_LOGTO_HASURA_RESOURCE || 'https://hasura.io/jwt/claims'],
     fetchUserInfo: true
   }
 })

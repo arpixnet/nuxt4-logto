@@ -1,12 +1,12 @@
 /**
  * Get JWT Token for Hasura
  *
- * This endpoint returns an access token from Logto that can be used
- * to authenticate with Hasura GraphQL Engine or other API endpoints.
+ * This endpoint returns an ACCESS TOKEN from Logto that can be used
+ * to authenticate with Hasura GraphQL Engine.
  *
- * The token contains standard JWT claims. For Hasura-specific claims,
- * configure them in Logto's JWT claims settings and use the access token
- * for the configured resource.
+ * IMPORTANT: We use getAccessToken() instead of getIdToken() because
+ * custom JWT claims (like Hasura claims) are only added to access tokens,
+ * not ID tokens.
  *
  * Usage in frontend:
  * ```ts
@@ -31,10 +31,10 @@ import { authLogger, logError } from '../../utils/logger'
 
 /**
  * Logto client interface with the methods we need
- * The actual client from @logto/nuxt has these methods at runtime
+ * The Logto client is initialized by server/middleware/01-api-auth.ts
  */
 interface LogtoClientMethods {
-  getIdToken: () => Promise<string | null>
+  getAccessToken: (resource?: string) => Promise<string>
   getContext: (params?: { fetchUserInfo?: boolean }) => Promise<{
     isAuthenticated: boolean
     userInfo?: {
@@ -48,7 +48,9 @@ interface LogtoClientMethods {
 }
 
 export default defineEventHandler(async (event) => {
-  // Logto client is initialized by server/middleware/api-auth.ts
+  const config = useRuntimeConfig(event)
+
+  // Logto client is initialized by server/middleware/01-api-auth.ts
   const client = event.context.logtoClient as unknown as LogtoClientMethods | undefined
 
   if (!client) {
@@ -60,8 +62,10 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // Get the ID token directly from Logto client
-    const token = await client.getIdToken()
+    // Get the ACCESS TOKEN for Hasura API resource
+    // This is crucial: custom claims are only in access tokens, not ID tokens
+    const hasuraResource = config.logto?.resources?.[0] || 'hasura'
+    const token = await client.getAccessToken(hasuraResource)
 
     if (!token) {
       throw createError({
@@ -75,7 +79,7 @@ export default defineEventHandler(async (event) => {
       fetchUserInfo: true
     })
 
-    // Decode JWT to get expiration time
+    // Decode JWT to get expiration time and claims
     const parts = token.split('.')
     if (parts.length !== 3) {
       authLogger.error({ partsLength: parts.length }, 'Invalid token format')
@@ -87,7 +91,8 @@ export default defineEventHandler(async (event) => {
     return {
       token,
       user: context.userInfo,
-      expiresAt: payload.exp
+      expiresAt: payload.exp,
+      hasuraClaims: payload['https://hasura.io/jwt/claims']
     }
   } catch (error) {
     logError(authLogger, error, 'Error getting JWT token')

@@ -1,0 +1,358 @@
+<script setup lang="ts">
+/**
+ * GraphQL Client Usage Examples
+ *
+ * This component demonstrates how to use the secure GraphQL client
+ * with Hasura and Logto authentication.
+ *
+ * Security features:
+ * - Tokens are stored ONLY in memory (never cookies/localStorage)
+ * - Automatic token refresh before expiration
+ * - Token cleared on logout
+ *
+ * User data comes from Logto, not from Hasura.
+ * Hasura only stores application data (posts) with author_id reference.
+ */
+
+const { query, mutate, useQuery, useSubscription, clearToken } = useGraphQLClient()
+const { isAuthenticated, session } = useAuthSession()
+
+// ==========================================
+// Types (matches Hasura schema)
+// ==========================================
+interface Post {
+  id: string
+  title: string
+  content: string
+  author_id: string
+  created_at: string
+}
+
+// ==========================================
+// 1. Reactive Query (auto-fetching)
+// ==========================================
+const postsQuery = useQuery<{ posts: Post[] }>(`
+  query GetPosts {
+    posts(order_by: { created_at: desc }, limit: 10) {
+      id
+      title
+      content
+      author_id
+      created_at
+    }
+  }
+`)
+
+// Helper to check if current user is the author
+function isAuthor(authorId: string): boolean {
+  return session.value?.user?.sub === authorId
+}
+
+// Helper to get author display name
+function getAuthorName(authorId: string): string {
+  if (isAuthor(authorId)) {
+    return session.value?.user?.name || 'You'
+  }
+  return `User ${authorId.slice(0, 8)}...`
+}
+
+// ==========================================
+// 2. Manual Query with Variables
+// ==========================================
+const searchQuery = ref('')
+const searchResults = ref<Post[]>([])
+const searchLoading = ref(false)
+
+async function searchPosts() {
+  if (!searchQuery.value.trim()) {
+    searchResults.value = []
+    return
+  }
+
+  searchLoading.value = true
+  try {
+    const data = await query<{ posts: Post[] }>(`
+      query SearchPosts($search: String!) {
+        posts(where: {
+          _or: [
+            { title: { _ilike: $search } },
+            { content: { _ilike: $search } }
+          ]
+        }, order_by: { created_at: desc }) {
+          id
+          title
+          content
+          author_id
+          created_at
+        }
+      }
+    `, { search: `%${searchQuery.value}%` })
+
+    searchResults.value = data.posts || []
+  } catch (error) {
+    console.error('Search failed:', error)
+  } finally {
+    searchLoading.value = false
+  }
+}
+
+// ==========================================
+// 3. Mutation Example
+// ==========================================
+const newPostTitle = ref('')
+const newPostContent = ref('')
+const creating = ref(false)
+
+async function createPost() {
+  if (!newPostTitle.value.trim()) return
+
+  creating.value = true
+  try {
+    await mutate(`
+      mutation CreatePost($title: String!, $content: String!) {
+        insert_posts_one(object: {
+          title: $title,
+          content: $content
+        }) {
+          id
+          title
+        }
+      }
+    `, {
+      title: newPostTitle.value,
+      content: newPostContent.value
+    })
+
+    // Reset form
+    newPostTitle.value = ''
+    newPostContent.value = ''
+
+    // Refetch posts
+    postsQuery.refetch()
+  } catch (error) {
+    console.error('Create post failed:', error)
+  } finally {
+    creating.value = false
+  }
+}
+
+// ==========================================
+// 4. Subscription Example (real-time updates)
+// ==========================================
+const livePostCount = ref(0)
+
+const postSubscription = useSubscription<{ posts: Post[] }>(`
+  subscription OnPostsChange {
+    posts(order_by: { created_at: desc }, limit: 10) {
+      id
+      title
+      author_id
+      created_at
+    }
+  }
+`)
+
+// Watch subscription data to count posts
+watch(() => postSubscription.data.value, (newData) => {
+  if (newData?.posts) {
+    livePostCount.value = newData.posts.length
+  }
+}, { immediate: true })
+
+// ==========================================
+// 5. Clear Token (on manual logout)
+// ==========================================
+function handleClearToken() {
+  clearToken()
+  console.log('Token cleared from memory')
+}
+</script>
+
+<template>
+  <div class="space-y-8 p-6">
+    <!-- Authentication Status -->
+    <div class="rounded-lg bg-gray-100 p-4 dark:bg-gray-800">
+      <p class="text-sm">
+        Status:
+        <span v-if="isAuthenticated" class="font-medium text-green-600">Authenticated</span>
+        <span v-else class="font-medium text-red-600">Not Authenticated</span>
+        <span v-if="session?.user" class="ml-2 text-gray-500">
+          ({{ session.user.name || session.user.email }})
+        </span>
+      </p>
+    </div>
+
+    <!-- 1. Reactive Query Example -->
+    <section>
+      <h2 class="mb-4 text-lg font-semibold">
+        1. Reactive Query (Auto-fetching)
+      </h2>
+
+      <div v-if="postsQuery.loading.value" class="text-gray-500">
+        Loading posts...
+      </div>
+
+      <div v-else-if="postsQuery.error.value" class="text-red-500">
+        Error: {{ postsQuery.error.value.message }}
+      </div>
+
+      <div v-else class="space-y-2">
+        <p class="text-sm text-gray-500">
+          Found {{ postsQuery.data.value?.posts?.length || 0 }} posts
+        </p>
+
+        <ul v-if="postsQuery.data.value?.posts?.length" class="space-y-2">
+          <li
+            v-for="post in postsQuery.data.value.posts"
+            :key="post.id"
+            class="rounded border p-3"
+          >
+            <h3 class="font-medium">
+              {{ post.title }}
+            </h3>
+            <p v-if="post.content" class="mt-1 text-sm text-gray-600">
+              {{ post.content.slice(0, 100) }}{{ post.content.length > 100 ? '...' : '' }}
+            </p>
+            <p class="mt-1 text-xs text-gray-400">
+              by {{ getAuthorName(post.author_id) }}
+              <span v-if="isAuthor(post.author_id)" class="ml-1 text-green-600">(you)</span>
+            </p>
+          </li>
+        </ul>
+
+        <p v-else class="text-gray-400 italic">
+          No posts yet. Create one below!
+        </p>
+
+        <UButton
+          size="sm"
+          @click="postsQuery.refetch"
+        >
+          Refetch Posts
+        </UButton>
+      </div>
+    </section>
+
+    <!-- 2. Manual Query with Variables -->
+    <section>
+      <h2 class="mb-4 text-lg font-semibold">
+        2. Search Posts (Manual Query)
+      </h2>
+
+      <div class="flex gap-2">
+        <UInput
+          v-model="searchQuery"
+          placeholder="Search in posts..."
+          class="flex-1"
+          @keyup.enter="searchPosts"
+        />
+        <UButton
+          :loading="searchLoading"
+          @click="searchPosts"
+        >
+          Search
+        </UButton>
+      </div>
+
+      <ul v-if="searchResults.length" class="mt-4 space-y-2">
+        <li
+          v-for="post in searchResults"
+          :key="post.id"
+          class="rounded border p-2"
+        >
+          <span class="font-medium">{{ post.title }}</span>
+          <span class="text-xs text-gray-400 ml-2">
+            by {{ getAuthorName(post.author_id) }}
+          </span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- 3. Mutation Example -->
+    <section>
+      <h2 class="mb-4 text-lg font-semibold">
+        3. Create Post (Mutation)
+      </h2>
+
+      <div class="space-y-2">
+        <UInput
+          v-model="newPostTitle"
+          placeholder="Post title..."
+        />
+        <UTextarea
+          v-model="newPostContent"
+          placeholder="Post content..."
+          :rows="3"
+        />
+        <UButton
+          :loading="creating"
+          :disabled="!newPostTitle.trim()"
+          @click="createPost"
+        >
+          Create Post
+        </UButton>
+      </div>
+    </section>
+
+    <!-- 4. Subscription Example -->
+    <section>
+      <h2 class="mb-4 text-lg font-semibold">
+        4. Real-time Posts (Subscription)
+      </h2>
+
+      <div class="flex items-center gap-4">
+        <div class="rounded-lg bg-blue-100 p-4 dark:bg-blue-900">
+          <span class="text-2xl font-bold">{{ livePostCount }}</span>
+          <span class="ml-2 text-sm">posts monitored</span>
+        </div>
+
+        <div class="text-sm">
+          <p>
+            Status:
+            <span v-if="postSubscription.isActive.value" class="text-green-600">Live</span>
+            <span v-else class="text-gray-500">Inactive</span>
+          </p>
+          <UButton
+            v-if="postSubscription.isActive.value"
+            size="xs"
+            color="error"
+            @click="postSubscription.stop"
+          >
+            Stop
+          </UButton>
+          <UButton
+            v-else
+            size="xs"
+            @click="postSubscription.start"
+          >
+            Start
+          </UButton>
+        </div>
+      </div>
+
+      <p v-if="postSubscription.error.value" class="mt-2 text-sm text-red-500">
+        Subscription error: {{ postSubscription.error.value }}
+      </p>
+    </section>
+
+    <!-- 5. Manual Token Clear -->
+    <section>
+      <h2 class="mb-4 text-lg font-semibold">
+        5. Manual Token Clear
+      </h2>
+
+      <p class="mb-2 text-sm text-gray-500">
+        Clears the token from memory (useful for debugging)
+      </p>
+
+      <UButton
+        size="sm"
+        color="error"
+        variant="outline"
+        @click="handleClearToken"
+      >
+        Clear Token
+      </UButton>
+    </section>
+  </div>
+</template>
