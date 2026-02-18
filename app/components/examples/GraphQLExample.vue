@@ -174,9 +174,22 @@ function handleClearToken() {
     <div class="rounded-lg bg-gray-100 p-4 dark:bg-gray-800">
       <p class="text-sm">
         Status:
-        <span v-if="isAuthenticated" class="font-medium text-green-600">Authenticated</span>
-        <span v-else class="font-medium text-red-600">Not Authenticated</span>
-        <span v-if="session?.user" class="ml-2 text-gray-500">
+        <span
+          v-if="isAuthenticated"
+          class="font-medium text-green-600"
+        >
+          Authenticated
+        </span>
+        <span
+          v-else
+          class="font-medium text-red-600"
+        >
+          Not Authenticated
+        </span>
+        <span
+          v-if="session?.user"
+          class="ml-2 text-gray-500"
+        >
           ({{ session.user.name || session.user.email }})
         </span>
       </p>
@@ -188,20 +201,32 @@ function handleClearToken() {
         1. Reactive Query (Auto-fetching)
       </h2>
 
-      <div v-if="postsQuery.loading.value" class="text-gray-500">
+      <div
+        v-if="postsQuery.loading.value"
+        class="text-gray-500"
+      >
         Loading posts...
       </div>
 
-      <div v-else-if="postsQuery.error.value" class="text-red-500">
+      <div
+        v-else-if="postsQuery.error.value"
+        class="text-red-500"
+      >
         Error: {{ postsQuery.error.value.message }}
       </div>
 
-      <div v-else class="space-y-2">
+      <div
+        v-else
+        class="space-y-2"
+      >
         <p class="text-sm text-gray-500">
           Found {{ postsQuery.data.value?.posts?.length || 0 }} posts
         </p>
 
-        <ul v-if="postsQuery.data.value?.posts?.length" class="space-y-2">
+        <ul
+          v-if="postsQuery.data.value?.posts?.length"
+          class="space-y-2"
+        >
           <li
             v-for="post in postsQuery.data.value.posts"
             :key="post.id"
@@ -210,17 +235,28 @@ function handleClearToken() {
             <h3 class="font-medium">
               {{ post.title }}
             </h3>
-            <p v-if="post.content" class="mt-1 text-sm text-gray-600">
+            <p
+              v-if="post.content"
+              class="mt-1 text-sm text-gray-600"
+            >
               {{ post.content.slice(0, 100) }}{{ post.content.length > 100 ? '...' : '' }}
             </p>
             <p class="mt-1 text-xs text-gray-400">
               by {{ getAuthorName(post.author_id) }}
-              <span v-if="isAuthor(post.author_id)" class="ml-1 text-green-600">(you)</span>
+              <span
+                v-if="isAuthor(post.author_id)"
+                class="ml-1 text-green-600"
+              >
+                (you)
+              </span>
             </p>
           </li>
         </ul>
 
-        <p v-else class="text-gray-400 italic">
+        <p
+          v-else
+          class="text-gray-400 italic"
+        >
           No posts yet. Create one below!
         </p>
 
@@ -254,7 +290,10 @@ function handleClearToken() {
         </UButton>
       </div>
 
-      <ul v-if="searchResults.length" class="mt-4 space-y-2">
+      <ul
+        v-if="searchResults.length"
+        class="mt-4 space-y-2"
+      >
         <li
           v-for="post in searchResults"
           :key="post.id"
@@ -309,8 +348,18 @@ function handleClearToken() {
         <div class="text-sm">
           <p>
             Status:
-            <span v-if="postSubscription.isActive.value" class="text-green-600">Live</span>
-            <span v-else class="text-gray-500">Inactive</span>
+            <span
+              v-if="postSubscription.isActive.value"
+              class="text-green-600"
+            >
+              Live
+            </span>
+            <span
+              v-else
+              class="text-gray-500"
+            >
+              Inactive
+            </span>
           </p>
           <UButton
             v-if="postSubscription.isActive.value"
@@ -330,7 +379,10 @@ function handleClearToken() {
         </div>
       </div>
 
-      <p v-if="postSubscription.error.value" class="mt-2 text-sm text-red-500">
+      <p
+        v-if="postSubscription.error.value"
+        class="mt-2 text-sm text-red-500"
+      >
         Subscription error: {{ postSubscription.error.value }}
       </p>
     </section>

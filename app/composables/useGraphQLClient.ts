@@ -67,6 +67,18 @@ import type {
   UseSubscriptionResult
 } from '../lib/graphql/types'
 
+/** Extended options for useQuery with auth wait support */
+interface UseQueryOptions extends RequestOptions {
+  /** Wait for authentication before executing (default: true) */
+  waitForAuth?: boolean
+}
+
+/** Extended options for useSubscription with auth wait support */
+interface UseSubscriptionOptions {
+  /** Wait for authentication before starting (default: true) */
+  waitForAuth?: boolean
+}
+
 /** Singleton client instance */
 let clientInstance: GraphQLClient | null = null
 
@@ -137,15 +149,25 @@ export function useGraphQLClient() {
    * Reactive query helper
    *
    * Automatically fetches data and provides reactive state.
+   * By default, waits for authentication before executing to avoid race conditions.
+   *
+   * @param queryString - GraphQL query string
+   * @param variables - Query variables
+   * @param options - Request options including waitForAuth (default: true)
    */
   function useQuery<T = unknown>(
     queryString: string,
     variables?: Record<string, unknown>,
-    options?: RequestOptions
+    options?: UseQueryOptions
   ): UseQueryResult<T> {
     const data = ref<T | null>(null) as Ref<T | null>
-    const loading = ref(false)
+    // Start loading=true when waiting for auth to avoid flicker
+    const loading = ref(options?.waitForAuth !== false)
     const error = ref<Error | null>(null)
+    const hasExecuted = ref(false)
+
+    // Default waitForAuth to true to prevent race conditions on page refresh
+    const waitForAuth = options?.waitForAuth !== false
 
     const execute = async () => {
       loading.value = true
@@ -160,8 +182,22 @@ export function useGraphQLClient() {
       }
     }
 
-    // Execute immediately
-    execute()
+    // Only run queries on client-side to avoid SSR issues
+    if (import.meta.server) {
+      // During SSR, don't execute - just return empty state
+      loading.value = false
+    } else if (waitForAuth) {
+      // On client, wait for authentication before executing
+      watch(isAuthenticated, (auth) => {
+        if (auth && !hasExecuted.value) {
+          hasExecuted.value = true
+          execute()
+        }
+      }, { immediate: true })
+    } else {
+      // Execute immediately (old behavior, may cause race conditions)
+      execute()
+    }
 
     return {
       data,
@@ -175,14 +211,24 @@ export function useGraphQLClient() {
    * Reactive subscription helper
    *
    * Automatically manages subscription lifecycle.
+   * By default, waits for authentication before starting to avoid race conditions.
+   *
+   * @param subscriptionString - GraphQL subscription string
+   * @param variables - Subscription variables
+   * @param options - Options including waitForAuth (default: true)
    */
   function useSubscription<T = unknown>(
     subscriptionString: string,
-    variables?: Record<string, unknown>
+    variables?: Record<string, unknown>,
+    options?: UseSubscriptionOptions
   ): UseSubscriptionResult<T> {
     const data = ref<T | null>(null) as Ref<T | null>
     const error = ref<unknown | null>(null)
     const isActive = ref(false)
+    const hasStarted = ref(false)
+
+    // Default waitForAuth to true to prevent race conditions on page refresh
+    const waitForAuth = options?.waitForAuth !== false
 
     let unsubscribe: (() => void) | null = null
 
@@ -216,8 +262,18 @@ export function useGraphQLClient() {
       isActive.value = false
     }
 
-    // Start automatically
-    start()
+    if (waitForAuth) {
+      // Wait for authentication before starting
+      watch(isAuthenticated, (auth) => {
+        if (auth && !hasStarted.value) {
+          hasStarted.value = true
+          start()
+        }
+      }, { immediate: true })
+    } else {
+      // Start immediately (old behavior, may cause race conditions)
+      start()
+    }
 
     // Clean up on unmount
     onUnmounted(stop)
