@@ -162,34 +162,6 @@ export const footerColumns: FooterColumn[] = [
 ]
 
 /**
- * User dropdown menu (in header)
- */
-export const userMenu: AppMenuItem[] = [
-  {
-    label: 'Profile',
-    icon: 'i-lucide-user',
-    to: '/profile',
-    roles: []
-  },
-  {
-    label: 'Settings',
-    icon: 'i-lucide-settings',
-    to: '/settings',
-    roles: []
-  },
-  {
-    divider: true,
-    roles: []
-  },
-  {
-    label: 'Sign Out',
-    icon: 'i-lucide-log-out',
-    to: '/sign-out',
-    roles: []
-  }
-]
-
-/**
  * Sidebar menu for admin/dashboard
  */
 export const sidebarMenu: AppMenuItem[] = [
@@ -258,7 +230,6 @@ export const menuConfig = {
   main: mainMenu,
   footer: footerMenu,
   footerColumns: footerColumns,
-  user: userMenu,
   sidebar: sidebarMenu
 } as const
 
