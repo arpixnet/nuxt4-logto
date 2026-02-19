@@ -69,27 +69,28 @@ function filterMenuItems(
 }
 
 /**
- * Get user roles from Logto session
+ * Menu Configuration Composable
+ *
+ * Provides filtered menu items based on user authentication and roles.
  */
-function getUserRoles(): string[] {
-  // Only run on client side
-  if (import.meta.server) {
-    return []
-  }
+export function useMenuConfig() {
+  const { isAuthenticated, session } = useAuthSession()
 
-  try {
-    // Access Logto user from the session
-    const { session } = useAuthSession()
+  // Track if auth state has been resolved on client (to avoid hydration mismatch)
+  const authResolved = ref(false)
+
+  // Get user roles reactively from session
+  const userRoles = computed<string[]>(() => {
+    if (import.meta.server) {
+      return []
+    }
+
     const user = session.value?.user as Record<string, unknown> | undefined
-
     if (!user) {
       return []
     }
 
-    // Get roles from the user object
-    // Logto stores roles in custom_data or as a direct property
     const roles = user.roles
-
     if (!Array.isArray(roles)) {
       return []
     }
@@ -97,25 +98,16 @@ function getUserRoles(): string[] {
     return roles
       .map(r => (typeof r === 'string' ? r : (r as Record<string, unknown>)?.name as string))
       .filter(Boolean)
-  } catch {
-    return []
-  }
-}
+  })
 
-/**
- * Menu Configuration Composable
- *
- * Provides filtered menu items based on user authentication and roles.
- */
-export function useMenuConfig() {
-  const { isAuthenticated } = useAuthSession()
-  const userRoles = ref<string[]>([])
-
-  // Update roles when auth state changes
+  // Mark auth as resolved after initial client mount
   if (import.meta.client) {
-    watch(isAuthenticated, () => {
-      userRoles.value = getUserRoles()
-    }, { immediate: true })
+    onMounted(() => {
+      // Small delay to ensure Logto has hydrated
+      nextTick(() => {
+        authResolved.value = true
+      })
+    })
   }
 
   /**
@@ -131,15 +123,22 @@ export function useMenuConfig() {
 
     const menuItems = items as AppMenuItem[]
 
-    // For SSR, return items that don't require specific roles
-    // (public + authenticated items, but not role-restricted)
+    // For SSR, only return truly public items (undefined roles)
+    // This prevents hydration mismatch
     if (import.meta.server) {
       return menuItems.filter((item) => {
-        // Public items
+        // Only public items (no roles defined)
         if (item.roles === undefined) return true
-        // Authenticated-only items (empty array)
-        if (item.roles?.length === 0) return true
-        // Role-restricted items - hide in SSR
+        // Hide authenticated and role-restricted items in SSR
+        return false
+      })
+    }
+
+    // On client, wait for auth to resolve before showing authenticated items
+    // During initial hydration, only show public items
+    if (!authResolved.value) {
+      return menuItems.filter((item) => {
+        if (item.roles === undefined) return true
         return false
       })
     }
@@ -159,14 +158,19 @@ export function useMenuConfig() {
     return footerColumns.map(column => ({
       title: column.title,
       links: column.links.filter((link) => {
-        // SSR: show public + authenticated only
+        // SSR: only show truly public items
         if (import.meta.server) {
           if (link.roles === undefined) return true
-          if (link.roles?.length === 0) return true
           return false
         }
 
-        // Client: use normal filtering
+        // Client during hydration: only show public items
+        if (!authResolved.value) {
+          if (link.roles === undefined) return true
+          return false
+        }
+
+        // Client after hydration: use normal filtering
         return isItemAccessible(link, isAuthenticated.value, userRoles.value)
       })
     })).filter(column => column.links.length > 0)

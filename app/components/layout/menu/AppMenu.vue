@@ -49,7 +49,7 @@ const props = withDefaults(defineProps<{
 const { getMenu, getFooterColumns } = useMenuConfig()
 const route = useRoute()
 
-// Get filtered menu items
+// Get filtered menu items - filtering is handled internally by useMenuConfig
 const menuItems = computed(() => getMenu(props.menu))
 
 // Get footer columns for footer-columns variant
