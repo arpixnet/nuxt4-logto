@@ -61,12 +61,14 @@ Production-ready boilerplate for Nuxt 4 applications with complete authenticatio
 
 ## 🚀 Quick Start
 
-### 1. Clone and configure
+### 1. Create a new project
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd nuxt4-logto
+# Create project from template
+npx nuxi init my-project -t github:arpixnet/nuxt4-logto
+
+# Navigate to project directory
+cd my-project
 
 # Install dependencies
 npm install
@@ -146,6 +148,26 @@ nuxt4-logto/
 ```
 
 ## 📚 Documentation
+
+### GraphQL and Hasura
+
+Complete architecture for GraphQL integration with Hasura. Includes secure client with JWT authentication, reactive queries with `useQuery`, real-time subscriptions with WebSocket, and TokenManager for secure token management in memory.
+
+👉 [View GraphQL and Hasura documentation](./doc/graphql-hasura.md)
+
+### Menu System
+
+Flexible menu system with support for horizontal, vertical, and footer variants. Includes role-based permissions, automatic i18n, external link detection, active state highlighting, and SSR-safe hydration.
+
+👉 [View Menu System documentation](./doc/menus.md)
+
+### Internationalization (i18n)
+
+Multi-language implementation with `@nuxtjs/i18n`. Covers configuration with `no_prefix` strategy, cookie-based language detection, component usage with `useI18n()`, SEO integration, and best practices for adding new languages.
+
+👉 [View i18n documentation](./doc/i18n.md)
+
+---
 
 ### API Middleware & Examples
 
