@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Development
-pnpm dev              # Start development server on http://localhost:3000
-pnpm build            # Production build
-pnpm preview          # Preview production build locally
+npm dev              # Start development server on http://localhost:3000
+npm build            # Production build
+npm preview          # Preview production build locally
 
 # Code Quality
-pnpm lint             # Run ESLint
-pnpm typecheck        # Run TypeScript type checking
+npm lint             # Run ESLint
+npm typecheck        # Run TypeScript type checking
 
 # Docker (infrastructure)
 docker compose -f docker/docker-compose.yml up -d              # Start all services
