@@ -69,21 +69,21 @@ export const mainMenu: AppMenuItem[] = [
   {
     label: 'menu.admin',
     icon: 'i-lucide-shield',
-    roles: ['user:menu'],
+    roles: ['user'],
     children: [
       {
         label: 'menu.users',
         description: 'menu.descriptions.users',
         icon: 'i-lucide-users',
         to: '/admin/users',
-        roles: ['user:menu']
+        roles: ['user']
       },
       {
         label: 'menu.settings',
         description: 'menu.descriptions.settings',
         icon: 'i-lucide-settings',
         to: '/admin/settings',
-        roles: ['user:menu']
+        roles: ['user']
       }
     ]
   },
