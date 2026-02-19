@@ -281,144 +281,152 @@ function handleClearToken() {
         </UButton>
       </div>
 
-      <div
-        v-if="postsQuery.loading.value"
-        class="text-gray-500"
-      >
-        Loading posts...
-      </div>
-
-      <div
-        v-else-if="postsQuery.error.value"
-        class="text-red-500"
-      >
-        Error: {{ postsQuery.error.value.message }}
-      </div>
-
-      <div v-else>
-        <!-- Post Form (Create/Edit) -->
+      <ClientOnly>
         <div
-          v-if="showForm"
-          class="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950"
+          v-if="postsQuery.loading.value"
+          class="text-gray-500"
         >
-          <h3 class="mb-3 font-medium">
-            {{ editingPost ? 'Edit Post' : 'Create New Post' }}
-          </h3>
-
-          <div class="grid gap-3">
-            <UInput
-              v-model="newPostTitle"
-              placeholder="Post title..."
-              size="lg"
-            />
-            <UTextarea
-              v-model="newPostContent"
-              placeholder="Post content (optional)..."
-              :rows="4"
-            />
-            <div class="flex gap-2">
-              <UButton
-                :loading="creating"
-                :disabled="!newPostTitle.trim()"
-                @click="savePost"
-              >
-                {{ editingPost ? 'Update' : 'Create' }}
-              </UButton>
-              <UButton
-                color="neutral"
-                variant="ghost"
-                @click="cancelForm"
-              >
-                Cancel
-              </UButton>
-            </div>
-          </div>
+          Loading posts...
         </div>
 
-        <!-- Posts List -->
-        <p
-          v-if="postsQuery.data.value?.posts?.length"
-          class="mb-3 text-sm text-gray-500"
+        <div
+          v-else-if="postsQuery.error.value"
+          class="text-red-500"
         >
-          {{ postsQuery.data.value.posts.length }} posts
-        </p>
+          Error: {{ postsQuery.error.value.message }}
+        </div>
 
-        <ul
-          v-if="postsQuery.data.value?.posts?.length"
-          class="space-y-3"
-        >
-          <li
-            v-for="post in postsQuery.data.value.posts"
-            :key="post.id"
-            class="rounded-lg border p-4 transition-shadow hover:shadow-md"
+        <div v-else>
+          <!-- Post Form (Create/Edit) -->
+          <div
+            v-if="showForm"
+            class="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950"
           >
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0 flex-1">
-                <h3 class="truncate font-medium">
-                  {{ post.title }}
-                </h3>
-                <p
-                  v-if="post.content"
-                  class="mt-1 text-sm text-gray-600 dark:text-gray-400"
-                >
-                  {{ post.content.slice(0, 150) }}{{ post.content.length > 150 ? '...' : '' }}
-                </p>
-                <p class="mt-2 text-xs text-gray-400">
-                  by {{ getAuthorName(post.author_id) }}
-                  <span
-                    v-if="isAuthor(post.author_id)"
-                    class="ml-1 font-medium text-green-600"
-                  >
-                    (you)
-                  </span>
-                  <span class="mx-1">·</span>
-                  {{ new Date(post.created_at).toLocaleDateString() }}
-                </p>
-              </div>
+            <h3 class="mb-3 font-medium">
+              {{ editingPost ? 'Edit Post' : 'Create New Post' }}
+            </h3>
 
-              <!-- Action Buttons (only for author) -->
-              <div
-                v-if="isAuthor(post.author_id)"
-                class="flex shrink-0 gap-1"
-              >
+            <div class="grid gap-3">
+              <UInput
+                v-model="newPostTitle"
+                placeholder="Post title..."
+                size="lg"
+              />
+              <UTextarea
+                v-model="newPostContent"
+                placeholder="Post content (optional)..."
+                :rows="4"
+              />
+              <div class="flex gap-2">
                 <UButton
-                  size="xs"
+                  :loading="creating"
+                  :disabled="!newPostTitle.trim()"
+                  @click="savePost"
+                >
+                  {{ editingPost ? 'Update' : 'Create' }}
+                </UButton>
+                <UButton
                   color="neutral"
                   variant="ghost"
-                  icon="i-lucide-pencil"
-                  @click="openEditForm(post)"
-                />
-                <UButton
-                  size="xs"
-                  color="error"
-                  variant="ghost"
-                  icon="i-lucide-trash-2"
-                  :loading="deleting === post.id"
-                  @click="deletePost(post)"
-                />
+                  @click="cancelForm"
+                >
+                  Cancel
+                </UButton>
               </div>
             </div>
-          </li>
-        </ul>
+          </div>
 
-        <p
-          v-else
-          class="rounded-lg border-2 border-dashed p-8 text-center text-gray-400"
-        >
-          No posts yet. Click "New Post" to create one!
-        </p>
+          <!-- Posts List -->
+          <p
+            v-if="postsQuery.data.value?.posts?.length"
+            class="mb-3 text-sm text-gray-500"
+          >
+            {{ postsQuery.data.value.posts.length }} posts
+          </p>
 
-        <UButton
-          v-if="postsQuery.data.value?.posts?.length"
-          size="xs"
-          color="neutral"
-          variant="ghost"
-          class="mt-3"
-          @click="postsQuery.refetch"
-        >
-          Refresh
-        </UButton>
-      </div>
+          <ul
+            v-if="postsQuery.data.value?.posts?.length"
+            class="space-y-3"
+          >
+            <li
+              v-for="post in postsQuery.data.value.posts"
+              :key="post.id"
+              class="rounded-lg border p-4 transition-shadow hover:shadow-md"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                  <h3 class="truncate font-medium">
+                    {{ post.title }}
+                  </h3>
+                  <p
+                    v-if="post.content"
+                    class="mt-1 text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    {{ post.content.slice(0, 150) }}{{ post.content.length > 150 ? '...' : '' }}
+                  </p>
+                  <p class="mt-2 text-xs text-gray-400">
+                    by {{ getAuthorName(post.author_id) }}
+                    <span
+                      v-if="isAuthor(post.author_id)"
+                      class="ml-1 font-medium text-green-600"
+                    >
+                      (you)
+                    </span>
+                    <span class="mx-1">·</span>
+                    {{ new Date(post.created_at).toLocaleDateString() }}
+                  </p>
+                </div>
+
+                <!-- Action Buttons (only for author) -->
+                <div
+                  v-if="isAuthor(post.author_id)"
+                  class="flex shrink-0 gap-1"
+                >
+                  <UButton
+                    size="xs"
+                    color="neutral"
+                    variant="ghost"
+                    icon="i-lucide-pencil"
+                    @click="openEditForm(post)"
+                  />
+                  <UButton
+                    size="xs"
+                    color="error"
+                    variant="ghost"
+                    icon="i-lucide-trash-2"
+                    :loading="deleting === post.id"
+                    @click="deletePost(post)"
+                  />
+                </div>
+              </div>
+            </li>
+          </ul>
+
+          <p
+            v-else
+            class="rounded-lg border-2 border-dashed p-8 text-center text-gray-400"
+          >
+            No posts yet. Click "New Post" to create one!
+          </p>
+
+          <UButton
+            v-if="postsQuery.data.value?.posts?.length"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            class="mt-3"
+            @click="postsQuery.refetch"
+          >
+            Refresh
+          </UButton>
+        </div>
+
+        <template #fallback>
+          <div class="text-gray-500">
+            Loading posts...
+          </div>
+        </template>
+      </ClientOnly>
     </section>
 
     <!-- 2. Manual Query with Variables -->
