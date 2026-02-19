@@ -1,13 +1,13 @@
 /**
  * Menu Configuration Composable
  *
- * Provides access to menu configurations with role-based filtering.
+ * Provides access to menu configurations with role-based filtering and i18n translation.
  * Integrates with Logto authentication to filter menu items based on user roles.
  *
  * Usage:
  * ```ts
  * const { getMenu, hasRole, isAuthenticated } = useMenuConfig()
- * const items = getMenu('main') // Returns filtered menu items
+ * const items = getMenu('main') // Returns filtered and translated menu items
  * ```
  */
 
@@ -33,7 +33,7 @@ function isItemAccessible(
   }
 
   // Specific roles = must have at least one matching role
-  return item.roles.some(role => userRoles.includes(role))
+  return item.roles.some((role: string) => userRoles.includes(role))
 }
 
 /**
@@ -71,10 +71,11 @@ function filterMenuItems(
 /**
  * Menu Configuration Composable
  *
- * Provides filtered menu items based on user authentication and roles.
+ * Provides filtered and translated menu items based on user authentication and roles.
  */
 export function useMenuConfig() {
   const { isAuthenticated, session } = useAuthSession()
+  const { t } = useI18n()
 
   // Track if auth state has been resolved on client (to avoid hydration mismatch)
   const authResolved = ref(false)
@@ -111,7 +112,39 @@ export function useMenuConfig() {
   }
 
   /**
-   * Get a menu by name with role-based filtering applied
+   * Translate a menu item label or description
+   * Only translates if the key starts with 'menu.'
+   */
+  function translateText(key: string | undefined): string | undefined {
+    if (!key) return undefined
+    if (key.startsWith('menu.')) {
+      return t(key)
+    }
+    return key
+  }
+
+  /**
+   * Translate a menu item and its children recursively
+   */
+  function translateItem(item: AppMenuItem): AppMenuItem {
+    const translated: AppMenuItem = {
+      ...item,
+      label: translateText(item.label) || item.label
+    }
+
+    if (item.description) {
+      translated.description = translateText(item.description)
+    }
+
+    if (item.children) {
+      translated.children = item.children.map(translateItem)
+    }
+
+    return translated
+  }
+
+  /**
+   * Get a menu by name with role-based filtering and i18n translation applied
    */
   function getMenu(name: string): AppMenuItem[] {
     const items = menuConfig[name as MenuConfigKey]
@@ -126,53 +159,59 @@ export function useMenuConfig() {
     // For SSR, only return truly public items (undefined roles)
     // This prevents hydration mismatch
     if (import.meta.server) {
-      return menuItems.filter((item) => {
-        // Only public items (no roles defined)
-        if (item.roles === undefined) return true
-        // Hide authenticated and role-restricted items in SSR
-        return false
-      })
+      return menuItems
+        .filter((item) => {
+          // Only public items (no roles defined)
+          if (item.roles === undefined) return true
+          // Hide authenticated and role-restricted items in SSR
+          return false
+        })
+        .map(translateItem)
     }
 
     // On client, wait for auth to resolve before showing authenticated items
     // During initial hydration, only show public items
     if (!authResolved.value) {
-      return menuItems.filter((item) => {
-        if (item.roles === undefined) return true
-        return false
-      })
+      return menuItems
+        .filter((item) => {
+          if (item.roles === undefined) return true
+          return false
+        })
+        .map(translateItem)
     }
 
     return filterMenuItems(
       menuItems,
       isAuthenticated.value,
       userRoles.value
-    )
+    ).map(translateItem)
   }
 
   /**
-   * Get footer columns with role-based filtering applied
+   * Get footer columns with role-based filtering and i18n translation applied
    */
   function getFooterColumns(): FooterColumn[] {
-    // Filter links in each column based on roles
+    // Filter links in each column based on roles and translate
     return footerColumns.map(column => ({
-      title: column.title,
-      links: column.links.filter((link) => {
-        // SSR: only show truly public items
-        if (import.meta.server) {
-          if (link.roles === undefined) return true
-          return false
-        }
+      title: translateText(column.title) || column.title,
+      links: column.links
+        .filter((link) => {
+          // SSR: only show truly public items
+          if (import.meta.server) {
+            if (link.roles === undefined) return true
+            return false
+          }
 
-        // Client during hydration: only show public items
-        if (!authResolved.value) {
-          if (link.roles === undefined) return true
-          return false
-        }
+          // Client during hydration: only show public items
+          if (!authResolved.value) {
+            if (link.roles === undefined) return true
+            return false
+          }
 
-        // Client after hydration: use normal filtering
-        return isItemAccessible(link, isAuthenticated.value, userRoles.value)
-      })
+          // Client after hydration: use normal filtering
+          return isItemAccessible(link, isAuthenticated.value, userRoles.value)
+        })
+        .map(translateItem)
     })).filter(column => column.links.length > 0)
   }
 
@@ -187,14 +226,14 @@ export function useMenuConfig() {
    * Check if current user has any of the specified roles
    */
   function hasAnyRole(roles: string[]): boolean {
-    return roles.some(role => userRoles.value.includes(role))
+    return roles.some((role: string) => userRoles.value.includes(role))
   }
 
   /**
    * Check if current user has all of the specified roles
    */
   function hasAllRoles(roles: string[]): boolean {
-    return roles.every(role => userRoles.value.includes(role))
+    return roles.every((role: string) => userRoles.value.includes(role))
   }
 
   return {
